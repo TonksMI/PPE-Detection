@@ -1,0 +1,7 @@
+path: /sessions/sleepy-epic-pascal/datasets/person_detection
+train: train/images
+val: val/images
+
+nc: 1
+names:
+  0: person
