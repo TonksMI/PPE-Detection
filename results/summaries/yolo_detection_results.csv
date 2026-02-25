@@ -1,0 +1,13 @@
+file,method,yolo_dets,ppe_classified,violations
+0.JPG,fine-tuned,4,4,4
+1.JPG,fine-tuned,3,3,1
+10.jpg,fine-tuned,1,1,1
+2.jpg,fine-tuned,4,4,0
+3.jpg,fine-tuned,1,1,0
+4.jpg,fine-tuned,4,4,0
+5.jpg,fine-tuned,2,2,2
+6.JPG,fine-tuned,2,2,2
+7.JPG,fine-tuned,1,1,1
+8.jpg,fine-tuned,2,2,1
+9.jpg,fine-tuned,2,2,2
+cctv_frame1.png,fine-tuned,2,2,2

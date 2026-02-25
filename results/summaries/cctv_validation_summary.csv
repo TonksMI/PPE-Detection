@@ -1,0 +1,13 @@
+image,type,prediction,confidence,detections
+0.JPG,full_scene,"{np.str_('helmet'): 51, np.str_('no_ppe'): 93}",0.883,144
+1.JPG,full_scene,"{np.str_('helmet'): 106, np.str_('no_ppe'): 73}",0.875,179
+10.jpg,full_scene,"{np.str_('safety_vest'): 15, np.str_('no_ppe'): 137, np.str_('full_ppe'): 4, np.str_('helmet'): 11, np.str_('partial_ppe'): 1}",0.801,168
+2.jpg,full_scene,"{np.str_('helmet'): 63, np.str_('no_ppe'): 148, np.str_('safety_vest'): 7, np.str_('full_ppe'): 20, np.str_('partial_ppe'): 2}",0.903,240
+3.jpg,full_scene,"{np.str_('helmet'): 238, np.str_('no_ppe'): 31, np.str_('full_ppe'): 6}",0.902,275
+4.jpg,full_scene,"{np.str_('helmet'): 52, np.str_('no_ppe'): 27, np.str_('safety_vest'): 8, np.str_('full_ppe'): 14, np.str_('partial_ppe'): 1}",0.809,102
+5.jpg,full_scene,"{np.str_('helmet'): 114, np.str_('no_ppe'): 84, np.str_('safety_vest'): 14, np.str_('full_ppe'): 5}",0.84,217
+6.JPG,full_scene,"{np.str_('helmet'): 42, np.str_('no_ppe'): 39, np.str_('full_ppe'): 5, np.str_('safety_vest'): 8, np.str_('partial_ppe'): 1}",0.832,95
+7.JPG,full_scene,"{np.str_('safety_vest'): 18, np.str_('no_ppe'): 96, np.str_('helmet'): 7, np.str_('full_ppe'): 6, np.str_('partial_ppe'): 1}",0.897,128
+8.jpg,full_scene,"{np.str_('helmet'): 126, np.str_('no_ppe'): 59, np.str_('full_ppe'): 40}",0.813,225
+9.jpg,full_scene,"{np.str_('helmet'): 65, np.str_('no_ppe'): 130, np.str_('safety_vest'): 14, np.str_('full_ppe'): 7}",0.848,216
+cctv_frame1.png,full_scene,"{np.str_('helmet'): 101, np.str_('no_ppe'): 46, np.str_('safety_vest'): 13, np.str_('full_ppe'): 4}",0.867,164

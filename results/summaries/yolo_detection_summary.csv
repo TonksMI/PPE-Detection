@@ -1,0 +1,9 @@
+image,hog_detected,hog_classified,yolo_zs_detected,yolo_zs_classified,yolo_ft_detected,yolo_ft_classified
+0.JPG,2,2,4,4,4,4
+1.JPG,3,3,2,2,3,3
+10.jpg,1,1,1,1,1,1
+2.jpg,3,3,5,5,4,4
+3.jpg,1,1,2,2,1,1
+4.jpg,6,6,6,6,4,2
+5.jpg,6,5,2,2,2,2
+6.JPG,6,6,1,1,2,2
