@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.env
+.venv/
+env/
+
+# Datasets (too large for git)
+datasets/
+data/
+*.npy
+*.h5
+*.hdf5
+
+# Cache
+cache/
+.cache/
+tmp/
+
+# YOLO training runs
+yolo_runs/
+runs/
+
+# Large model files (Random Forest pkl > 10MB)
+*_rf_multi.pkl
+*_rf_binary.pkl
+v2_model_rf_*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Node
+node_modules/
+
+# Logs
+*.log
+*.out
+
+# Temp output
+*.tmp
