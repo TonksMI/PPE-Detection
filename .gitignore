@@ -16,6 +16,7 @@ data/
 *.npy
 *.h5
 *.hdf5
+*.pkl
 
 # Cache
 cache/
