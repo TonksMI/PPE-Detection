@@ -65,13 +65,17 @@ MAX_CLASS = args.max_per_class
 random.seed(42); np.random.seed(42); torch.manual_seed(42)
 
 # ── Paths ──────────────────────────────────────────────────────
-BASE  = "/sessions/sleepy-epic-pascal"
+# Auto-detect base path (works on both Linux and Windows)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
+BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
+
 MINHNKB_IMG = os.path.join(BASE,"datasets/helmet-safety-vest-detection-master/train-images-data")
 MINHNKB_ANN = os.path.join(BASE,"datasets/helmet-safety-vest-detection-master/train-images-annotations-new")
 JOMARK_IMG  = os.path.join(BASE,"datasets/jomarkow/images")
 JOMARK_LBL  = os.path.join(BASE,"datasets/jomarkow/labels")
 CACHE_DIR   = os.path.join(BASE,"cache")
-OUT_DIR     = os.path.join(BASE,"mnt/Computer Vision")
+OUT_DIR     = os.path.join(PROJECT_DIR,"results/models")
 VAL_DIR     = os.path.join(BASE,"cctv_validation")
 
 os.makedirs(CACHE_DIR, exist_ok=True)

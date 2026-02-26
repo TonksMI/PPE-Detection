@@ -41,10 +41,27 @@ PPE-Detection/
 - YOLOv8n zero-shot: 36 people across 14 CCTV images @ 83.2% avg confidence
 
 ## Environment
-- Python 3.x, PyTorch (CPU only), ultralytics, scikit-learn, opencv-python, joblib, matplotlib
-- Cache dir: ../cache/ (relative to src/)
+- **Platform**: Windows 10/11 (win32), Python 3.10.6 (MSC v.1932 64-bit AMD64)
+- **PyTorch**: 2.10.0 (CPU-only) + torchvision 0.25.0
+- **Working directory**: D:\Claude\PPE-Detection
+- Cache dir: D:\Claude\cache\ (create if missing)
 - All final outputs go in results/plots/, results/summaries/, results/models/
 - Commit changes with descriptive messages following existing style (feat:, results:, fix:, docs:)
+
+### Required Dependencies (install before training)
+```bash
+pip install ultralytics scikit-learn opencv-python joblib matplotlib
+```
+
+### Currently Installed
+- torch 2.10.0, torchvision 0.25.0, numpy 2.2.6, pandas 2.3.3, pillow 12.1.0
+- ultralytics 8.4.17, scikit-learn 1.7.2, opencv-python 4.13.0.92, joblib 1.5.3, matplotlib 3.10.8
+
+### Training Notes (CPU-only)
+- Training will be slower without GPU — expect ~5-10x longer than CUDA
+- Reduce batch sizes if memory issues occur (e.g., batch=64 instead of 256)
+- YOLOv8n fine-tuning: use `device='cpu'` explicitly
+- For PPENet training, consider fewer epochs initially to verify setup works
 
 ## Priorities for Improvement
 1. More YOLOv8n fine-tuning epochs (only 4 done, mAP50=0.679; target 0.85+)

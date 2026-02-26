@@ -18,10 +18,15 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 random.seed(42); np.random.seed(42); torch.manual_seed(42)
 
-DATASET_DIR = "/sessions/sleepy-epic-pascal/datasets/helmet-safety-vest-detection-master"
+# Auto-detect paths (works on both Linux and Windows)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
+BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
+
+DATASET_DIR = os.path.join(BASE, "datasets/helmet-safety-vest-detection-master")
 IMG_DIR  = os.path.join(DATASET_DIR, "train-images-data")
 ANN_DIR  = os.path.join(DATASET_DIR, "train-images-annotations-new")
-OUT_DIR  = "/sessions/sleepy-epic-pascal/mnt/Computer Vision"
+OUT_DIR  = os.path.join(PROJECT_DIR, "results/models")
 
 RAW_CLASS_MAP = {"helmet":"helmet","safety vest":"safety_vest",
     "person with full safety":"full_ppe","person with partial safety":"partial_ppe",

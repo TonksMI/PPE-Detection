@@ -23,10 +23,15 @@ import joblib
 warnings.filterwarnings('ignore')
 random.seed(42); np.random.seed(42)
 
-DATASET_DIR = "/sessions/sleepy-epic-pascal/datasets/helmet-safety-vest-detection-master"
+# Auto-detect paths (works on both Linux and Windows)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
+BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
+
+DATASET_DIR = os.path.join(BASE, "datasets/helmet-safety-vest-detection-master")
 IMG_DIR  = os.path.join(DATASET_DIR, "train-images-data")
 ANN_DIR  = os.path.join(DATASET_DIR, "train-images-annotations-new")
-OUT_DIR  = "/sessions/sleepy-epic-pascal/mnt/Computer Vision"
+OUT_DIR  = os.path.join(PROJECT_DIR, "results/models")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 RAW_CLASS_MAP = {
@@ -278,9 +283,11 @@ print("="*60)
 print(f"\nAll outputs in: {OUT_DIR}")
 
 # Save numpy arrays for CNN script
-np.save("/sessions/sleepy-epic-pascal/X_features.npy", X)
-np.save("/sessions/sleepy-epic-pascal/y_multi.npy", y_m_enc)
-np.save("/sessions/sleepy-epic-pascal/y_binary.npy", y_b_enc)
-joblib.dump(le_m, "/sessions/sleepy-epic-pascal/le_multi.pkl")
-joblib.dump(le_b, "/sessions/sleepy-epic-pascal/le_binary.pkl")
+CACHE_DIR = os.path.join(BASE, "cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+np.save(os.path.join(CACHE_DIR, "X_features.npy"), X)
+np.save(os.path.join(CACHE_DIR, "y_multi.npy"), y_m_enc)
+np.save(os.path.join(CACHE_DIR, "y_binary.npy"), y_b_enc)
+joblib.dump(le_m, os.path.join(CACHE_DIR, "le_multi.pkl"))
+joblib.dump(le_b, os.path.join(CACHE_DIR, "le_binary.pkl"))
 print("\nFeatures saved for CNN script.")
