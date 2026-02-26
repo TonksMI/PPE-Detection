@@ -7,18 +7,24 @@ Dataset: Jomarkow (safety site images, head annotations) + MinhNKB (labeled PPE 
 
 ## Repo Structure
 PPE-Detection/
+├── setup_datasets.py           # dataset download/preparation script
 ├── src/                        # all training scripts
-│   ├── eda_analysis.py         # EDA + feature extraction
-│   ├── train_models.py         # SVM / RF / GBM (HOG features)
-│   ├── train_cnn.py            # CNN v1 (PPENet, 64×64)
-│   ├── cctv_validation.py      # sliding-window HOG+CNN CCTV test
+│   ├── ppe_ml_models.py        # SVM / RF / GBM (HOG features)
+│   ├── ppe_cnn.py              # CNN v1 (PPENet, 64×64)
+│   ├── ppe_cnn_fast.py         # PPENetFast (32×32, production model)
+│   ├── ppe_cctv_validation.py  # sliding-window HOG+CNN CCTV test
+│   ├── ppe_pipeline.py         # single-image inference pipeline
+│   ├── ppe_combined_pipeline.py # YOLO person detect + PPENetFast classify
 │   ├── ppe_production_train.py # full pipeline: loads cache, trains all models
-│   └── generate_plots.py       # all evaluation plots
+│   ├── ppe_ml_continue.py      # ML model training continuation
+│   ├── ppe_v2_cnn_only.py      # CNN v2 experiments
+│   └── ppe_final_report.py     # evaluation plots + report generation
 ├── person_detection/
 │   ├── prepare_dataset.py      # builds YOLO training set (head→body expansion + INRIA crops)
 │   └── person_detect.yaml      # YOLOv8n config (nc=1, person)
 ├── reports/
-│   └── create_prod_report.js   # generates PPE_Detection_Report_v2.docx via docx@9.5.1
+│   ├── create_prod_report.js   # generates PPE_Detection_Report_v2.docx via docx@9.5.1
+│   └── create_report.js        # v1 report generator
 ├── results/
 │   ├── plots/                  # all .png evaluation figures
 │   ├── summaries/              # CSV performance summaries
@@ -42,26 +48,24 @@ PPE-Detection/
 
 ## Environment
 - **Platform**: Windows 10/11 (win32), Python 3.10.6 (MSC v.1932 64-bit AMD64)
-- **PyTorch**: 2.10.0 (CPU-only) + torchvision 0.25.0
+- **PyTorch**: 2.12.0.dev (nightly) + CUDA 12.8 + torchvision 0.26.0.dev
+- **GPU**: NVIDIA GeForce RTX 5070 (12GB VRAM, Blackwell sm_120)
 - **Working directory**: D:\Claude\PPE-Detection
-- Cache dir: D:\Claude\cache\ (create if missing)
+- **Datasets dir**: D:\datasets\ (jomarkow, helmet-safety-vest-detection-master, inria_person, ppe_crops, person_detection)
+- Cache dir: D:\Claude\cache\
 - All final outputs go in results/plots/, results/summaries/, results/models/
 - Commit changes with descriptive messages following existing style (feat:, results:, fix:, docs:)
 
-### Required Dependencies (install before training)
-```bash
-pip install ultralytics scikit-learn opencv-python joblib matplotlib
-```
-
 ### Currently Installed
-- torch 2.10.0, torchvision 0.25.0, numpy 2.2.6, pandas 2.3.3, pillow 12.1.0
-- ultralytics 8.4.17, scikit-learn 1.7.2, opencv-python 4.13.0.92, joblib 1.5.3, matplotlib 3.10.8
+- torch 2.12.0.dev+cu128, torchvision 0.26.0.dev+cu128
+- ultralytics 8.4.17, scikit-learn 1.7.2, opencv-python 4.13.0.92
+- joblib 1.5.3, matplotlib 3.10.8, numpy 2.2.6, pandas 2.3.3, pillow 12.1.0
 
-### Training Notes (CPU-only)
-- Training will be slower without GPU — expect ~5-10x longer than CUDA
-- Reduce batch sizes if memory issues occur (e.g., batch=64 instead of 256)
-- YOLOv8n fine-tuning: use `device='cpu'` explicitly
-- For PPENet training, consider fewer epochs initially to verify setup works
+### Training Notes (CUDA)
+- GPU training enabled — expect 5-10x speedup vs CPU
+- RTX 5070 has 12GB VRAM — can use batch=256 or higher for PPENet
+- YOLOv8n fine-tuning: use `device=0` or `device='cuda'`
+- Mixed precision (fp16) supported for faster training
 
 ## Priorities for Improvement
 1. More YOLOv8n fine-tuning epochs (only 4 done, mAP50=0.679; target 0.85+)
@@ -69,6 +73,25 @@ pip install ultralytics scikit-learn opencv-python joblib matplotlib
 3. Data augmentation (currently minimal)
 4. Class weighting for partial_ppe / full_ppe (underrepresented)
 5. End-to-end YOLO for PPE detection (single-stage)
+
+## Commands
+
+```bash
+# Train PPENetFast (production CNN)
+python src/ppe_production_train.py
+
+# Train ML baselines (SVM/RF/GBM)
+python src/ppe_ml_models.py
+
+# Run full two-stage pipeline (YOLO + CNN) on an image
+python src/ppe_combined_pipeline.py
+
+# CCTV sliding-window validation
+python src/ppe_cctv_validation.py
+
+# Setup/download datasets
+python setup_datasets.py
+```
 
 ## Conventions
 - Always save new scripts to src/, new plots to results/plots/, updated models to results/models/

@@ -3,7 +3,13 @@
     "allow": [
       "Bash(python:*)",
       "Bash(dir:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(python3:*)"
     ]
   }
 }

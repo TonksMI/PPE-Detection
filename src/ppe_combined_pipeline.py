@@ -45,10 +45,16 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
 BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
 
-MINHNKB_IMG_DIR = os.path.join(BASE, "datasets/helmet-safety-vest-detection-master/train-images-data")
-MINHNKB_ANN_DIR = os.path.join(BASE, "datasets/helmet-safety-vest-detection-master/train-images-annotations-new")
-JOMARKOW_IMG_DIR = os.path.join(BASE, "datasets/jomarkow/images")
-JOMARKOW_LBL_DIR = os.path.join(BASE, "datasets/jomarkow/labels")
+# Datasets location (D:\datasets on Windows, or BASE/datasets on Linux)
+if os.path.exists("D:/datasets/jomarkow"):
+    DATASETS = "D:/datasets"
+else:
+    DATASETS = os.path.join(BASE, "datasets")
+
+MINHNKB_IMG_DIR = os.path.join(DATASETS, "helmet-safety-vest-detection-master/train-images-data")
+MINHNKB_ANN_DIR = os.path.join(DATASETS, "helmet-safety-vest-detection-master/train-images-annotations-new")
+JOMARKOW_IMG_DIR = os.path.join(DATASETS, "jomarkow/images")
+JOMARKOW_LBL_DIR = os.path.join(DATASETS, "jomarkow/labels")
 OUT_DIR   = os.path.join(PROJECT_DIR, "results/models")
 VAL_DIR   = os.path.join(BASE, "cctv_validation")
 CROP_SIZE = (64, 64)

@@ -33,7 +33,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+from sklearn.ensemble import (RandomForestClassifier, HistGradientBoostingClassifier,
+                               ExtraTreesClassifier, VotingClassifier)
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import (classification_report, confusion_matrix,
@@ -70,13 +71,19 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
 BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
 
-MINHNKB_IMG = os.path.join(BASE,"datasets/helmet-safety-vest-detection-master/train-images-data")
-MINHNKB_ANN = os.path.join(BASE,"datasets/helmet-safety-vest-detection-master/train-images-annotations-new")
-JOMARK_IMG  = os.path.join(BASE,"datasets/jomarkow/images")
-JOMARK_LBL  = os.path.join(BASE,"datasets/jomarkow/labels")
+# Datasets location (D:\datasets on Windows, or BASE/datasets on Linux)
+if os.path.exists("D:/datasets/jomarkow"):
+    DATASETS = "D:/datasets"
+else:
+    DATASETS = os.path.join(BASE, "datasets")
+
+MINHNKB_IMG = os.path.join(DATASETS,"helmet-safety-vest-detection-master/train-images-data")
+MINHNKB_ANN = os.path.join(DATASETS,"helmet-safety-vest-detection-master/train-images-annotations-new")
+JOMARK_IMG  = os.path.join(DATASETS,"jomarkow/images")
+JOMARK_LBL  = os.path.join(DATASETS,"jomarkow/labels")
 CACHE_DIR   = os.path.join(BASE,"cache")
 OUT_DIR     = os.path.join(PROJECT_DIR,"results/models")
-VAL_DIR     = os.path.join(BASE,"cctv_validation")
+VAL_DIR     = os.path.join(PROJECT_DIR,"cctv_validation_original")
 
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -246,41 +253,97 @@ def train_eval(name, pipe, Xtr, Xte, ytr, yte, le, tag):
                      'task':'multi' if 'multi' in tag else 'binary'}
     joblib.dump(pipe, os.path.join(OUT_DIR,f"prod_{tag}.pkl"))
 
-# SVM — uses PCA to compress 1956→150 dims before RBF kernel
-train_eval("SVM (PCA→RBF, multi)", Pipeline([
-    ('sc',StandardScaler()),('pca',PCA(150,random_state=42)),
-    ('svm',SVC(kernel='rbf',C=15,gamma='scale',probability=True,random_state=42))
+# SVM — PCA(220) keeps more variance; class_weight via sample_weight not supported,
+#        so we use balanced class_weight via CalibratedClassifierCV wrapper
+train_eval("SVM (PCA->RBF, multi)", Pipeline([
+    ('sc',StandardScaler()),('pca',PCA(220,random_state=42)),
+    ('svm',SVC(kernel='rbf',C=15,gamma='scale',probability=True,
+               class_weight='balanced',random_state=42))
 ]), Xtr,Xte,ytr,yte,le_multi,'svm_multi')
 
-train_eval("SVM (PCA→RBF, binary)", Pipeline([
-    ('sc',StandardScaler()),('pca',PCA(100,random_state=42)),
-    ('svm',SVC(kernel='rbf',C=10,gamma='scale',probability=True,random_state=42))
+train_eval("SVM (PCA->RBF, binary)", Pipeline([
+    ('sc',StandardScaler()),('pca',PCA(150,random_state=42)),
+    ('svm',SVC(kernel='rbf',C=10,gamma='scale',probability=True,
+               class_weight='balanced',random_state=42))
 ]), Xtrb,Xteb,ytrb,yteb,le_binary,'svm_binary')
 
-# Random Forest — 400 trees, deeper
+# Random Forest — balanced class weights
 train_eval("RandomForest (400 trees, multi)", Pipeline([
     ('sc',StandardScaler()),
     ('rf',RandomForestClassifier(400,max_depth=22,min_samples_split=3,
-                                  n_jobs=-1,random_state=42))
+                                  class_weight='balanced',n_jobs=-1,random_state=42))
 ]), Xtr,Xte,ytr,yte,le_multi,'rf_multi')
 
 train_eval("RandomForest (400 trees, binary)", Pipeline([
     ('sc',StandardScaler()),
-    ('rf',RandomForestClassifier(400,max_depth=18,n_jobs=-1,random_state=42))
+    ('rf',RandomForestClassifier(400,max_depth=18,class_weight='balanced',
+                                  n_jobs=-1,random_state=42))
 ]), Xtrb,Xteb,ytrb,yteb,le_binary,'rf_binary')
 
-# HistGBM — 200 boosting rounds
-train_eval("HistGBM (200 rounds, multi)", Pipeline([
-    ('sc',StandardScaler()),('pca',PCA(120,random_state=42)),
-    ('gbm',HistGradientBoostingClassifier(max_iter=200,max_depth=8,
-                                          learning_rate=0.05,random_state=42))
+# ExtraTrees — faster and often better than RF; balanced weights
+train_eval("ExtraTrees (400 trees, multi)", Pipeline([
+    ('sc',StandardScaler()),
+    ('et',ExtraTreesClassifier(400,max_depth=24,min_samples_split=3,
+                                class_weight='balanced',n_jobs=-1,random_state=42))
+]), Xtr,Xte,ytr,yte,le_multi,'et_multi')
+
+train_eval("ExtraTrees (400 trees, binary)", Pipeline([
+    ('sc',StandardScaler()),
+    ('et',ExtraTreesClassifier(400,max_depth=20,class_weight='balanced',
+                                n_jobs=-1,random_state=42))
+]), Xtrb,Xteb,ytrb,yteb,le_binary,'et_binary')
+
+# HistGBM — no PCA (histogram binning handles high-dim natively);
+#            more iterations + lower lr; class_weight balanced
+train_eval("HistGBM (400 rounds, multi)", Pipeline([
+    ('sc',StandardScaler()),
+    ('gbm',HistGradientBoostingClassifier(max_iter=400,max_depth=8,
+                                          learning_rate=0.02,class_weight='balanced',
+                                          random_state=42))
 ]), Xtr,Xte,ytr,yte,le_multi,'gbm_multi')
 
-train_eval("HistGBM (200 rounds, binary)", Pipeline([
-    ('sc',StandardScaler()),('pca',PCA(80,random_state=42)),
-    ('gbm',HistGradientBoostingClassifier(max_iter=200,max_depth=6,
-                                          learning_rate=0.05,random_state=42))
+train_eval("HistGBM (400 rounds, binary)", Pipeline([
+    ('sc',StandardScaler()),
+    ('gbm',HistGradientBoostingClassifier(max_iter=400,max_depth=6,
+                                          learning_rate=0.02,class_weight='balanced',
+                                          random_state=42))
 ]), Xtrb,Xteb,ytrb,yteb,le_binary,'gbm_binary')
+
+# Soft-voting ensemble — combines SVM + RF + ExtraTrees + GBM probabilities
+print(f"  [{'Building soft-voting ensemble':35s}]", end=' ', flush=True)
+t0 = time.time()
+
+svm_est  = Pipeline([('sc',StandardScaler()),('pca',PCA(220,random_state=42)),
+                     ('svm',SVC(kernel='rbf',C=15,gamma='scale',probability=True,
+                                class_weight='balanced',random_state=42))])
+rf_est   = Pipeline([('sc',StandardScaler()),
+                     ('rf',RandomForestClassifier(400,max_depth=22,min_samples_split=3,
+                                                   class_weight='balanced',n_jobs=-1,random_state=42))])
+et_est   = Pipeline([('sc',StandardScaler()),
+                     ('et',ExtraTreesClassifier(400,max_depth=24,min_samples_split=3,
+                                                 class_weight='balanced',n_jobs=-1,random_state=42))])
+gbm_est  = Pipeline([('sc',StandardScaler()),
+                     ('gbm',HistGradientBoostingClassifier(max_iter=400,max_depth=8,
+                                                            learning_rate=0.02,class_weight='balanced',
+                                                            random_state=42))])
+
+ensemble_multi = VotingClassifier(
+    estimators=[('svm',svm_est),('rf',rf_est),('et',et_est),('gbm',gbm_est)],
+    voting='soft', n_jobs=1
+)
+ensemble_multi.fit(Xtr, ytr)
+yp_ens = ensemble_multi.predict(Xte)
+rpt_ens = classification_report(yte,yp_ens,target_names=le_multi.classes_,output_dict=True)
+acc_ens = rpt_ens['accuracy']
+tt_ens  = time.time()-t0
+print(f"acc={acc_ens:.4f}  t={tt_ens:.0f}s")
+ml_results['ensemble_multi'] = {
+    'name':'Ensemble (SVM+RF+ET+GBM, multi)','accuracy':acc_ens,
+    'report':rpt_ens,'confusion':confusion_matrix(yte,yp_ens),
+    'model':ensemble_multi,'time':tt_ens,'yp':yp_ens,'yt':yte,
+    'le':le_multi,'task':'multi'
+}
+joblib.dump(ensemble_multi, os.path.join(OUT_DIR,'prod_ensemble_multi.pkl'))
 
 # ══════════════════════════════════════════════════════════════════
 # PHASE 3: CNN TRAINING
@@ -501,7 +564,7 @@ print(f"  Processing {len(val_images)} validation images...")
 model.eval()
 fig, axes = plt.subplots(3, 4, figsize=(24,18))
 axes = axes.flatten()
-fig.suptitle("PPE Two-Stage Detection: OpenCV HOG Person Detector → CNN Classifier\n"
+fig.suptitle("PPE Two-Stage Detection: OpenCV HOG Person Detector -> CNN Classifier\n"
              f"Combined Dataset: MinhNKB + Jomarkow | CNN: {len(crops_rgb)} crops | {EPOCHS} epochs",
              fontsize=12, fontweight='bold')
 fig.patch.set_facecolor('#0d1117')

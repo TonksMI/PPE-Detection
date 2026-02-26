@@ -1,0 +1,11 @@
+Model,Task,Accuracy,Macro F1,Weighted F1,Train Time(s)
+"SVM (PCA->RBF, multi)",multi,0.7631,0.7446,0.7647,4.8
+"RandomForest (400 trees, multi)",multi,0.73,0.7078,0.7272,3.9
+"ExtraTrees (400 trees, multi)",multi,0.7176,0.6929,0.7133,1.2
+"HistGBM (400 rounds, multi)",multi,0.7672,0.7452,0.7657,190.0
+"Ensemble (SVM+RF+ET+GBM, multi)",multi,0.7948,0.7771,0.7939,198.8
+CNN PPENet (100ep),multi,0.8733,0.8564,0.8722,51.9
+"SVM (PCA->RBF, binary)",binary,0.8444,0.8003,0.8424,3.0
+"RandomForest (400 trees, binary)",binary,0.814,0.7185,0.7921,3.3
+"ExtraTrees (400 trees, binary)",binary,0.7837,0.6219,0.733,1.1
+"HistGBM (400 rounds, binary)",binary,0.832,0.7895,0.832,29.4

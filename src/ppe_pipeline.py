@@ -49,11 +49,17 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)  # PPE-Detection/
 BASE = os.path.dirname(PROJECT_DIR)  # D:\Claude or /sessions/...
 
-DATASET_DIR = os.path.join(BASE, "datasets/helmet-safety-vest-detection-master")
+# Datasets location (D:\datasets on Windows, or BASE/datasets on Linux)
+if os.path.exists("D:/datasets/jomarkow"):
+    DATASETS = "D:/datasets"
+else:
+    DATASETS = os.path.join(BASE, "datasets")
+
+DATASET_DIR = os.path.join(DATASETS, "helmet-safety-vest-detection-master")
 IMG_DIR     = os.path.join(DATASET_DIR, "train-images-data")
 ANN_DIR     = os.path.join(DATASET_DIR, "train-images-annotations-new")
 OUT_DIR     = os.path.join(PROJECT_DIR, "results/models")
-CROPS_DIR   = os.path.join(BASE, "crops")
+CROPS_DIR   = os.path.join(DATASETS, "ppe_crops")
 IMG_SIZE    = (64, 64)   # crop resize for features
 HOG_SIZE    = (64, 64)
 
