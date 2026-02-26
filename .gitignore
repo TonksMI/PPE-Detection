@@ -31,6 +31,7 @@ runs/
 *_rf_multi.pkl
 *_rf_binary.pkl
 v2_model_rf_*.pkl
+prod_ensemble_multi.pkl
 
 # Jupyter
 .ipynb_checkpoints/
