@@ -139,27 +139,31 @@ if os.path.exists(cnn_path) and os.path.exists(le_cnn_path) and crops_exist:
         def __init__(self, num_classes):
             super().__init__()
             self.features = nn.Sequential(
-                nn.Conv2d(3,32,3,padding=1),nn.BatchNorm2d(32),nn.ReLU(),
+                # Block 1
+                nn.Conv2d(3,32,3,padding=1),nn.BatchNorm2d(32),nn.ReLU(inplace=True),
+                nn.Conv2d(32,32,3,padding=1),nn.BatchNorm2d(32),nn.ReLU(inplace=True),
                 nn.MaxPool2d(2),nn.Dropout2d(0.1),
-                nn.Conv2d(32,64,3,padding=1),nn.BatchNorm2d(64),nn.ReLU(),
+                # Block 2
+                nn.Conv2d(32,64,3,padding=1),nn.BatchNorm2d(64),nn.ReLU(inplace=True),
+                nn.Conv2d(64,64,3,padding=1),nn.BatchNorm2d(64),nn.ReLU(inplace=True),
                 nn.MaxPool2d(2),nn.Dropout2d(0.1),
-                nn.Conv2d(64,128,3,padding=1),nn.BatchNorm2d(128),nn.ReLU(),
-                nn.AdaptiveAvgPool2d((2,2)),
+                # Block 3
+                nn.Conv2d(64,128,3,padding=1),nn.BatchNorm2d(128),nn.ReLU(inplace=True),
+                nn.MaxPool2d(2),nn.Dropout2d(0.2),
+                nn.AdaptiveAvgPool2d((1,1)),
             )
             self.classifier = nn.Sequential(
-                nn.Dropout(0.4),nn.Linear(128*4,256),nn.ReLU(),
-                nn.Dropout(0.3),nn.Linear(256,num_classes),
+                nn.Flatten(),
+                nn.Linear(128,256),nn.BatchNorm1d(256),nn.ReLU(inplace=True),nn.Dropout(0.4),
+                nn.Linear(256,128),nn.ReLU(inplace=True),nn.Dropout(0.3),
+                nn.Linear(128,num_classes),
             )
-        def forward(self, x): return self.classifier(self.features(x).flatten(1))
+        def forward(self, x): return self.classifier(self.features(x))
 
     le_cnn = joblib.load(le_cnn_path)
-    state  = torch.load(cnn_path, map_location='cpu', weights_only=True)
+    ckpt   = torch.load(cnn_path, map_location='cpu', weights_only=False)  # own checkpoint, safe
     cnn_model = PPENet(len(le_cnn.classes_))
-    try:
-        cnn_model.load_state_dict(state)
-    except RuntimeError:
-        # Architecture mismatch — try to load what we can
-        cnn_model.load_state_dict(state, strict=False)
+    cnn_model.load_state_dict(ckpt['state_dict'])
     cnn_model.eval()
 
     crops_rgb = np.load(crops_path)

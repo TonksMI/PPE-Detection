@@ -4,11 +4,12 @@ Automated Personal Protective Equipment (PPE) detection for industrial warehouse
 
 ## Overview
 
-| Stage | Method | Accuracy |
-|-------|--------|----------|
-| Person Detection | YOLOv8n fine-tuned (mAP50 = 0.679) | Replaces OpenCV HOG |
-| PPE Classification | CNN PPENet — 30 epochs | **87.1% multi-class** |
-| Binary (PPE / no PPE) | SVM (HOG + colour features) | **84.6%** |
+| Stage | Method | Result |
+|-------|--------|--------|
+| Person Detection | YOLOv8n fine-tuned | mAP50 = 0.679 |
+| PPE Classification | CNN PPENet — 100 epochs, RTX 5070 | **87.33% multi-class** |
+| Binary (PPE / no PPE) | SVM (HOG + colour features) | **84.44%** |
+| Best Multi-class AUC | CNN PPENet (one-vs-rest) | **0.978** |
 
 ### Pipeline
 
@@ -18,7 +19,7 @@ CCTV Frame → YOLOv8n Person Detector → Person Crops → CNN PPENet → PPE C
 
 **Stage 1 — Person Detection:** YOLOv8n fine-tuned on 1,105 images (jomarkow hard-hat workers with head-to-body box expansion + 300 INRIA pedestrian crops). Pre-trained on COCO (118K images).
 
-**Stage 2 — PPE Classification:** Custom lightweight CNN (226K parameters, 32×32 input) classifying 5 safety classes with 87.1% validation accuracy.
+**Stage 2 — PPE Classification:** Custom lightweight CNN (207K parameters, 64×64 input) classifying 5 safety classes with 87.33% validation accuracy.
 
 ---
 
@@ -50,22 +51,24 @@ CCTV Frame → YOLOv8n Person Detector → Person Crops → CNN PPENet → PPE C
 
 ### Multi-class Classification (5 classes)
 
-| Model | Accuracy | Macro F1 |
-|-------|----------|----------|
-| CNN PPENet (30 epochs) | **87.05%** | **0.849** |
-| SVM (PCA → RBF) | 76.58% | 0.749 |
-| Random Forest (400 trees) | 71.76% | 0.692 |
-| HistGBM (200 rounds) | 67.22% | 0.642 |
+| Model | Accuracy | Macro F1 | AUC |
+|-------|----------|----------|-----|
+| CNN PPENet (100 epochs, GPU) | **87.33%** | **0.856** | **0.978** |
+| Ensemble (SVM+RF+ET+GBM) | 79.48% | 0.777 | 0.950 |
+| HistGBM (400 rounds, no PCA) | 76.72% | 0.745 | 0.943 |
+| SVM (PCA 220 → RBF, balanced) | 76.31% | 0.745 | 0.943 |
+| Random Forest (400 trees) | 73.00% | 0.708 | 0.923 |
+| ExtraTrees (400 trees) | 71.76% | 0.693 | 0.924 |
 
-### Per-class CNN F1 Scores
+### Per-class CNN F1 Scores (100 epochs)
 
 | Class | Precision | Recall | F1 |
 |-------|-----------|--------|----|
-| helmet | 0.93 | 0.95 | **0.94** |
-| safety_vest | 0.94 | 0.97 | **0.95** |
-| no_ppe | 0.90 | 0.88 | 0.89 |
-| full_ppe | 0.79 | 0.74 | 0.77 |
-| partial_ppe | 0.72 | 0.72 | 0.72 |
+| safety_vest | 0.93 | 0.93 | **0.93** |
+| no_ppe | 0.87 | 0.94 | **0.90** |
+| helmet | 0.92 | 0.91 | 0.91 |
+| partial_ppe | 0.75 | 0.77 | 0.76 |
+| full_ppe | 0.85 | 0.71 | 0.77 |
 
 ### Person Detection (YOLOv8n fine-tuning)
 
@@ -83,25 +86,27 @@ CCTV Frame → YOLOv8n Person Detector → Person Crops → CNN PPENet → PPE C
 ```
 PPE-Detection/
 ├── src/
-│   ├── ppe_pipeline.py            # Original end-to-end pipeline
-│   ├── ppe_ml_models.py           # SVM, RF, GBM training (v1)
-│   ├── ppe_ml_continue.py         # ML models with combined dataset
-│   ├── ppe_cnn_fast.py            # CNN v1 (pre-cached crops)
-│   ├── ppe_production_train.py    # Full production training script
+│   ├── ppe_production_train.py    # Full production training script (all models)
+│   ├── ppe_cnn_fast.py            # PPENetFast CNN definition
+│   ├── ppe_ml_models.py           # SVM, RF, ExtraTrees, GBM baselines
+│   ├── ppe_combined_pipeline.py   # YOLO person detect + PPENetFast classify
 │   ├── ppe_cctv_validation.py     # CCTV sliding-window validation
-│   └── ppe_final_report.py        # Dashboard and visualisation
+│   └── ppe_pipeline.py            # Single-image inference pipeline
 ├── person_detection/
 │   ├── person_detect.yaml         # YOLOv8 training config
 │   └── prepare_dataset.py         # Head-to-body box expansion script
 ├── reports/
-│   ├── create_report.js           # Word document generator (v1)
-│   └── create_prod_report.js      # Word document generator (v2)
+│   ├── create_prod_report.js      # Word document generator (v3)
+│   └── create_report.js           # Word document generator (v1)
+├── skills/
+│   └── ppe-report-generator/      # Claude Code skill: HTML evaluation report
 ├── results/
-│   ├── plots/                     # All evaluation visualisations
-│   ├── summaries/                 # CSV model comparison tables
-│   └── models/                    # Saved model weights (.pth)
+│   ├── plots/                     # Evaluation visualisations
+│   ├── models/                    # Saved weights (.pth, .pkl) and plots
+│   └── reports/                   # HTML evaluation report + ROC curves
+├── setup_datasets.py              # Dataset download and preparation
 └── docs/
-    └── PPE_Detection_Report_v2.docx
+    └── PPE_Detection_Report_v3.docx
 ```
 
 ---
@@ -113,9 +118,19 @@ PPE-Detection/
 pip install torch torchvision scikit-learn opencv-python ultralytics matplotlib seaborn pandas joblib
 ```
 
-### Train production models
+### Setup datasets
 ```bash
-python src/ppe_production_train.py --epochs 30 --batch-size 256 --max-per-class 600
+python setup_datasets.py
+```
+
+### Train production models (CNN + all ML baselines)
+```bash
+python src/ppe_production_train.py --epochs 100 --batch-size 256 --max-per-class 600
+```
+
+### Run two-stage pipeline on an image
+```bash
+python src/ppe_combined_pipeline.py
 ```
 
 ### Fine-tune YOLOv8n person detector
@@ -126,6 +141,11 @@ yolo train data=person_detection/person_detect.yaml model=yolov8n.pt epochs=10 i
 ### Run CCTV validation
 ```bash
 python src/ppe_cctv_validation.py
+```
+
+### Generate Word document report
+```bash
+cd reports && node create_prod_report.js
 ```
 
 ---
@@ -142,8 +162,8 @@ python src/ppe_cctv_validation.py
 
 ## Future Improvements
 
-1. **Transfer learning** (MobileNetV2 / EfficientNet-B0) — expected +5–8%
-2. **Data augmentation** during training — expected +3–5%
-3. **YOLO end-to-end** (detect + classify in one pass) — expected +10–15%
-4. **More `partial_ppe` / `full_ppe` training data** — addresses weakest classes
-5. **GPU training** — enables 100+ epochs and full 64×64 crops
+1. **More YOLOv8n fine-tuning** — 4 epochs trained (mAP50=0.679), target 0.85+ with 20+ epochs
+2. **Transfer learning** (MobileNetV2 / EfficientNet-B0) — expected +5–8%
+3. **Data augmentation** during training — expected +3–5%
+4. **YOLO end-to-end** (detect + classify in one pass) — expected +10–15%
+5. **More `partial_ppe` / `full_ppe` training data** — addresses weakest classes (F1 0.76/0.77)

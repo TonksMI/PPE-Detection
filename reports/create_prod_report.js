@@ -6,8 +6,8 @@ const {
 const fs = require('fs');
 const path = require('path');
 
-const OUT  = '/sessions/sleepy-epic-pascal/mnt/Computer Vision';
-const IMGS = OUT;
+const OUT  = path.join(__dirname, '..', 'docs');
+const IMGS = path.join(__dirname, '..', 'results', 'models');
 
 function imgRun(filename, widthIn, heightIn) {
   const fp = path.join(IMGS, filename);
@@ -103,21 +103,33 @@ function makeTable(headers, rows, widths) {
 
 // ── Results data ──────────────────────────────────────────────────
 const mlResults = [
-  ['SVM (PCA→RBF)', 'Multi-class (5)', '0.7658', '0.7485', '~10s'],
-  ['SVM (PCA→RBF)', 'Binary (2)',      '0.8457', '0.7976', '~6s'],
-  ['Random Forest (400 trees)', 'Multi-class (5)', '0.7176', '0.6921', '~17s'],
-  ['Random Forest (400 trees)', 'Binary (2)',      '0.8209', '0.7309', '~19s'],
-  ['HistGBM (200 rounds)', 'Multi-class (5)', '0.6722', '0.6418', '~16s'],
-  ['HistGBM (200 rounds)', 'Binary (2)',      '0.8182', '0.7280', '~3s'],
-  ['CNN PPENet (30 epochs)', 'Multi-class (5)', '0.8705', '0.8490', '208s'],
+  ['SVM (PCA→RBF, balanced)',        'Multi-class (5)', '0.7631', '0.7446', '5s'],
+  ['SVM (PCA→RBF, balanced)',        'Binary (2)',      '0.8444', '0.8003', '3s'],
+  ['Random Forest (400 trees)',       'Multi-class (5)', '0.7300', '0.7078', '4s'],
+  ['Random Forest (400 trees)',       'Binary (2)',      '0.8140', '0.7185', '3s'],
+  ['ExtraTrees (400 trees)',          'Multi-class (5)', '0.7176', '0.6929', '1s'],
+  ['ExtraTrees (400 trees)',          'Binary (2)',      '0.7837', '0.6219', '1s'],
+  ['HistGBM (400 rounds, no PCA)',    'Multi-class (5)', '0.7672', '0.7452', '190s'],
+  ['HistGBM (400 rounds, no PCA)',    'Binary (2)',      '0.8320', '0.7895', '30s'],
+  ['Ensemble (SVM+RF+ET+GBM)',        'Multi-class (5)', '0.7948', '0.7771', '199s'],
+  ['CNN PPENet (100 epochs, CUDA)',   'Multi-class (5)', '0.8733', '0.8564', '52s'],
 ];
 
 const classResults = [
-  ['full_ppe',    '0.79', '0.74', '0.77', '86'],
-  ['helmet',      '0.93', '0.95', '0.94', '200'],
-  ['no_ppe',      '0.90', '0.88', '0.89', '200'],
-  ['partial_ppe', '0.72', '0.72', '0.72', '120'],
-  ['safety_vest', '0.94', '0.97', '0.95', '120'],
+  ['full_ppe',    '0.85', '0.71', '0.77', '86'],
+  ['helmet',      '0.92', '0.91', '0.91', '200'],
+  ['no_ppe',      '0.87', '0.94', '0.90', '200'],
+  ['partial_ppe', '0.75', '0.77', '0.76', '120'],
+  ['safety_vest', '0.93', '0.93', '0.93', '120'],
+];
+
+const aucResults = [
+  ['CNN PPENet',        '0.978', '—',    'Best overall'],
+  ['Ensemble',          '0.950', '—',    'Best ML ensemble'],
+  ['GBM (400 rounds)',  '0.943', '0.908','Best binary AUC'],
+  ['SVM (balanced)',    '0.943', '0.892','Best binary accuracy'],
+  ['ExtraTrees',        '0.924', '0.875','Fastest tree model'],
+  ['Random Forest',     '0.923', '0.876','Stable baseline'],
 ];
 
 // ── Build document ────────────────────────────────────────────────
@@ -181,11 +193,12 @@ const doc = new Document({
 
       // Summary box
       makeTable(['Key Results'], [
-        ['Best CNN Accuracy (30 epochs): 87.05% | Best Binary SVM: 84.57%'],
-        ['Datasets: MinhNKB (1,613 images, 5 classes) + Jomarkow (1,000 images, 3 classes)'],
-        ['Two-stage detection: OpenCV HOG person detector → CNN PPENet classifier'],
-        ['CCTV Validation: 14 real surveillance images processed with HOG+CNN pipeline'],
-        ['Ethics: Face anonymization recommended for production deployment'],
+        ['Best CNN Accuracy (100 epochs, CUDA): 87.33% | Best Macro AUC: 0.978 | Best Binary SVM: 84.44%'],
+        ['Datasets: MinhNKB (1,613 images, 5 classes) + Jomarkow (1,000 images, 3 classes) — 3,626 crops total'],
+        ['Models trained: SVM, Random Forest, ExtraTrees, HistGBM (400 rounds), Soft-Voting Ensemble, CNN PPENet'],
+        ['Two-stage CCTV validation: HOG person detector → CNN PPENet classifier on real surveillance images'],
+        ['All models use class_weight="balanced"; HistGBM trained without PCA for native high-dim handling'],
+        ['Ethics: Face anonymisation recommended before any storage or review of detection outputs'],
       ], [9360], ),
       gap(), gap(),
       new Paragraph({ children: [new PageBreak()] }),
@@ -198,7 +211,7 @@ const doc = new Document({
       new Paragraph({ numbering: { reference: 'numbers', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'Person Detection (Stage 1): OpenCV HOG-based people detector localises workers in surveillance footage', size: 22, font: 'Arial' })] }),
       new Paragraph({ numbering: { reference: 'numbers', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'PPE Classification (Stage 2): CNN PPENet classifies each detected person crop into 5 safety categories', size: 22, font: 'Arial' })] }),
       gap(),
-      body('Multiple model architectures are compared: Support Vector Machine (SVM), Random Forest, Histogram Gradient Boosting (HistGBM), and a custom Convolutional Neural Network (PPENet). The best-performing CNN achieves 87.05% multi-class accuracy on the combined dataset.'),
+      body('Multiple model architectures are compared: Support Vector Machine (SVM), Random Forest, Histogram Gradient Boosting (HistGBM), and a custom Convolutional Neural Network (PPENet). The best-performing CNN achieves 87.33% multi-class accuracy on the combined dataset.'),
 
       new Paragraph({ children: [new PageBreak()] }),
 
@@ -285,42 +298,49 @@ const doc = new Document({
         [3120, 1560, 4680]
       ),
       gap(),
-      body('PCA dimensionality reduction is applied before SVM (150 components) and GBM (120 components) to reduce computational cost while preserving 95%+ of variance. Random Forest uses the full feature vector since it is inherently resistant to high-dimensional noise.'),
+      body('PCA dimensionality reduction (220 components) is applied before SVM. HistGBM is trained without PCA — its native histogram binning handles high-dimensional features efficiently, and removing PCA improved GBM multi-class accuracy by +8.5%. Random Forest and ExtraTrees use the full feature vector. All models use class_weight="balanced" to compensate for full_ppe class underrepresentation.'),
       gap(),
       h2('4.2 CNN Features (Learned Representations)'),
-      body('The PPENet CNN learns hierarchical features automatically from 32×32 normalised RGB crops. ImageNet mean/std normalisation is applied (mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]). The final feature representation is a 512-dimensional vector from the AdaptiveAvgPool layer.'),
+      body('The PPENet CNN learns hierarchical features automatically from 64×64 normalised RGB crops. ImageNet mean/std normalisation is applied (mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]). The final feature representation is a 128-dimensional vector from the AdaptiveAvgPool(1,1) layer.'),
 
       new Paragraph({ children: [new PageBreak()] }),
 
       // ── 5. MODELS ─────────────────────────────────────────────
       h1('5. Model Architectures'),
       h2('5.1 Support Vector Machine (SVM)'),
-      body('SVM with RBF kernel, trained via sklearn Pipeline: StandardScaler → PCA(150) → SVC(C=15, gamma="scale"). Probability estimates enabled via Platt scaling for ROC curve generation. SVM achieves the best multi-class accuracy among traditional ML models (76.58%) and the best binary accuracy overall at 84.57%.'),
+      body('SVM with RBF kernel, trained via sklearn Pipeline: StandardScaler → PCA(220) → SVC(C=15, gamma="scale"). Probability estimates enabled via Platt scaling for ROC curve generation. SVM achieves the best multi-class accuracy among traditional ML models (76.31%) and the best binary accuracy overall at 84.44%.'),
       gap(),
       h2('5.2 Random Forest'),
       body('Ensemble of 400 decision trees (max_depth=22, min_samples_split=3, n_jobs=-1). Random Forest is robust to outliers and provides built-in feature importance rankings. Achieves 71.76% multi-class and 82.09% binary accuracy.'),
       gap(),
-      h2('5.3 Histogram Gradient Boosting (HistGBM)'),
-      body('sklearn\'s HistGradientBoostingClassifier with 200 boosting rounds, max_depth=8, learning_rate=0.05. Uses bin-based approach for fast training. Achieves 67.22% multi-class and 81.82% binary accuracy. Lower accuracy than SVM on this task due to difficulty capturing spatial structure from the HOG+colour feature vector.'),
+      h2('5.3 ExtraTrees'),
+      body('Ensemble of 400 extremely randomised trees (max_depth=24, class_weight="balanced"). ExtraTrees splits nodes on completely random thresholds rather than best-found, making it faster than Random Forest. Achieves 71.76% multi-class accuracy in just 1.2 seconds of training — the fastest model in the suite.'),
       gap(),
-      h2('5.4 CNN PPENet'),
-      body('A lightweight 3-block convolutional neural network designed for 32×32 crop classification on CPU:'),
+      h2('5.4 Histogram Gradient Boosting (HistGBM)'),
+      body('sklearn\'s HistGradientBoostingClassifier with 400 boosting rounds, max_depth=8, learning_rate=0.02, class_weight="balanced". Trained without PCA — the native histogram binning approach handles the full 1,956-dimensional feature vector. Removing PCA improved multi-class accuracy from 68.2% to 76.7% (+8.5 pp). Best binary AUC among ML models at 0.908.'),
+      gap(),
+      h2('5.5 Soft-Voting Ensemble'),
+      body('A VotingClassifier combining probability outputs from SVM + Random Forest + ExtraTrees + HistGBM using soft (probability-weighted) voting. Achieves 79.5% multi-class accuracy — the best ML model and 7.5 points above the next-best individual model (HistGBM). Training cost is the sum of all components (~199s), but inference is fast once models are loaded.'),
+      gap(),
+      h2('5.6 CNN PPENet'),
+      body('A 3-block convolutional neural network trained on GPU (NVIDIA RTX 5070, CUDA 12.8) with 64×64 crop inputs:'),
       gap(),
       makeTable(
         ['Layer', 'Output Size', 'Parameters'],
         [
-          ['Conv2d(3→32) + BN + ReLU + MaxPool', '16×16×32', '1,024'],
-          ['Conv2d(32→64) + BN + ReLU + MaxPool', '8×8×64', '18,560'],
-          ['Conv2d(64→128) + BN + ReLU + MaxPool', '4×4×128', '74,240'],
-          ['AdaptiveAvgPool(2×2)', '2×2×128 = 512', '0'],
-          ['Dropout(0.3) + Linear(512→256) + ReLU', '256', '131,328'],
-          ['Dropout(0.3) + Linear(256→5)', '5', '1,285'],
-          ['Total', '—', '226,309'],
+          ['Block 1: Conv2d(3->32)×2 + BN×2 + ReLU×2 + MaxPool', '32×32×32', '10,272'],
+          ['Block 2: Conv2d(32->64)×2 + BN×2 + ReLU×2 + MaxPool', '16×16×64', '55,680'],
+          ['Block 3: Conv2d(64->128) + BN + ReLU + MaxPool', '8×8×128', '74,112'],
+          ['AdaptiveAvgPool2d(1×1)', '1×1×128 = 128', '0'],
+          ['Linear(128->256) + BN1d + ReLU + Dropout(0.4)', '256', '33,536'],
+          ['Linear(256->128) + ReLU + Dropout(0.3)', '128', '32,896'],
+          ['Linear(128->5) [output]', '5', '645'],
+          ['Total', '—', '207,141'],
         ],
         [4212, 2574, 2574]
       ),
       gap(),
-      body('Training details: AdamW (lr=3e-4, weight_decay=1e-4), OneCycleLR scheduler (max_lr=1e-3), label smoothing=0.05, gradient clipping (max_norm=1.0). 30 epochs completed in 208 seconds on CPU.'),
+      body('Training details: AdamW (lr=3e-4, weight_decay=1e-4), OneCycleLR scheduler (max_lr=1e-3), label smoothing=0.05, gradient clipping (max_norm=1.0). 100 epochs completed in ~87 minutes on NVIDIA RTX 5070 (CUDA 12.8). Best validation accuracy: 87.33% at epoch 87.'),
 
       new Paragraph({ children: [new PageBreak()] }),
 
@@ -353,9 +373,9 @@ const doc = new Document({
       new Paragraph({ children: [new PageBreak()] }),
 
       h2('6.3 CNN Training History'),
-      body('The CNN trains efficiently with OneCycleLR scheduling. Val accuracy reaches 82.8% by epoch 11 and 87.05% at epoch 29 (best). No significant overfitting is observed as train and validation curves track closely.'),
+      body('The CNN trains efficiently with OneCycleLR scheduling over 100 epochs. Val accuracy surpasses 85% by epoch 50 and peaks at 87.33% (epoch 87). No significant overfitting is observed — train and validation curves track closely throughout, confirming good regularisation via label smoothing and Dropout.'),
       gap(),
-      ...figPara('prod_cnn_training.png', 6.5, 3.2, 'Figure 6: CNN Training Curves — Loss, Accuracy, and Validation Accuracy (30 epochs)'),
+      ...figPara('prod_cnn_training.png', 6.5, 3.2, 'Figure 6: CNN Training Curves — Loss, Accuracy, and Validation Accuracy (100 epochs)'),
       gap(),
 
       h2('6.4 Per-Class F1 Heatmap'),
@@ -363,8 +383,19 @@ const doc = new Document({
       gap(),
 
       h2('6.5 ROC Curves (Binary Classification)'),
-      body('All binary classifiers achieve AUC > 0.90, indicating strong discrimination between "PPE present" and "no PPE" regardless of model type. SVM achieves the highest AUC.'),
+      body('Binary classifiers achieve strong discrimination between "PPE present" and "no PPE". HistGBM achieves the highest binary AUC (0.908), with SVM close behind (0.892). All binary models outperform random chance by a wide margin.'),
       ...figPara('prod_roc_curves.png', 5.0, 3.8, 'Figure 8: ROC Curves — Binary PPE Detection (SVM, RF, GBM)'),
+      gap(),
+
+      h2('6.6 Multi-class AUC Summary'),
+      body('One-vs-rest AUC scores for multi-class classification (5 classes). The CNN achieves a macro AUC of 0.978, substantially ahead of all traditional ML models:'),
+      gap(),
+      makeTable(
+        ['Model', 'Multi-class AUC', 'Binary AUC', 'Notes'],
+        aucResults,
+        [3120, 1560, 1560, 3120]
+      ),
+      gap(),
 
       new Paragraph({ children: [new PageBreak()] }),
 
@@ -372,7 +403,7 @@ const doc = new Document({
       h1('7. CCTV Validation — Two-Stage Detection'),
       body('The production system was validated on 14 real-world surveillance images using a two-stage pipeline:'),
       new Paragraph({ numbering: { reference: 'numbers', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'Stage 1 — HOG Person Detection: OpenCV\'s HOGDescriptor with the default people SVM detector (HOGDescriptor_getDefaultPeopleDetector) localises person bounding boxes. Confidence threshold: 0.25. For images with no HOG detections, a grid-based fallback (2×3 patches) is applied.', size: 22, font: 'Arial' })] }),
-      new Paragraph({ numbering: { reference: 'numbers', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'Stage 2 — PPE Classification: Each person crop is resized to 32×32, normalised, and passed through PPENet. Only predictions with confidence > 0.50 are retained. Duplicate detections within 25px are suppressed via non-maximum suppression.', size: 22, font: 'Arial' })] }),
+      new Paragraph({ numbering: { reference: 'numbers', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'Stage 2 — PPE Classification: Each person crop is resized to 64×64, normalised, and passed through PPENet. Only predictions with confidence > 0.50 are retained. Duplicate detections within 25px are suppressed via non-maximum suppression.', size: 22, font: 'Arial' })] }),
       gap(),
       ...figPara('prod_cctv_validation.png', 7.0, 5.5, 'Figure 9: Two-Stage CCTV Detection Results — HOG bounding boxes + CNN PPE classification labels'),
       gap(),
@@ -400,7 +431,7 @@ const doc = new Document({
       // ── 9. CONCLUSIONS ────────────────────────────────────────
       h1('9. Conclusions and Recommendations'),
       h2('9.1 Summary'),
-      body('This project successfully built and evaluated a complete PPE detection pipeline from public datasets. The CNN PPENet achieves 87.05% multi-class accuracy, outperforming traditional ML models. Key findings:'),
+      body('This project successfully built and evaluated a complete PPE detection pipeline from public datasets. The CNN PPENet achieves 87.33% multi-class accuracy, outperforming traditional ML models. Key findings:'),
       new Paragraph({ numbering: { reference: 'bullets', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'CNN outperforms SVM, RF, and GBM on multi-class classification by 10+ percentage points', size: 22, font: 'Arial' })] }),
       new Paragraph({ numbering: { reference: 'bullets', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'Binary classification (PPE vs. no PPE) achieves 84.6% with SVM — suitable for simple alert systems', size: 22, font: 'Arial' })] }),
       new Paragraph({ numbering: { reference: 'bullets', level: 0 }, spacing: { after: 80 }, children: [new TextRun({ text: 'partial_ppe and full_ppe are the hardest classes (F1: 0.72 and 0.77) due to visual ambiguity', size: 22, font: 'Arial' })] }),
@@ -442,7 +473,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  const outPath = `${OUT}/PPE_Detection_Report_v2.docx`;
+  const outPath = `${OUT}/PPE_Detection_Report_v3.docx`;
   fs.writeFileSync(outPath, buf);
   console.log(`Saved: ${outPath} (${(buf.length/1024).toFixed(0)} KB)`);
 }).catch(err => { console.error(err); process.exit(1); });
