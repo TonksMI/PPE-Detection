@@ -1,0 +1,37 @@
+{
+  "eval_id": 1,
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": true,
+      "evidence": "File exists, 7.8 MB"
+    },
+    {
+      "text": "roc_multiclass.png exists in results/reports/",
+      "passed": true,
+      "evidence": "File exists, 207 KB"
+    },
+    {
+      "text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN",
+      "passed": true,
+      "evidence": "Table in response lists all 6 with individual AUC scores"
+    },
+    {
+      "text": "Response includes specific AUC scores (numbers like 0.9xx)",
+      "passed": true,
+      "evidence": "CNN 0.9776, Ensemble 0.9497, GBM 0.9432, SVM 0.9427, ET 0.9238, RF 0.9230"
+    },
+    {
+      "text": "Response tells user where the HTML report is saved",
+      "passed": true,
+      "evidence": "Explicitly states results/reports/ppe_evaluation_report.html"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "generate-full-report",
+  "prompt": "Generate the full PPE pipeline evaluation report with ROC and AUC curves for all models",
+  "assertions": [
+    {"id": "html_exists",    "description": "HTML report file exists at results/reports/ppe_evaluation_report.html"},
+    {"id": "roc_png_exists", "description": "roc_multiclass.png exists in results/reports/"},
+    {"id": "all_models_mentioned", "description": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN"},
+    {"id": "auc_scores_reported", "description": "Response includes specific AUC scores (numbers like 0.9xx)"},
+    {"id": "report_path_given", "description": "Response tells user where the HTML report is saved"}
+  ]
+}

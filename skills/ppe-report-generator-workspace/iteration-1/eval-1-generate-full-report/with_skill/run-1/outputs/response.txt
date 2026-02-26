@@ -1,0 +1,42 @@
+The full PPE pipeline evaluation report has been generated successfully.
+
+Report saved to:
+  D:\Claude\PPE-Detection\results\reports\ppe_evaluation_report.html
+  (self-contained HTML, 7.8 MB — all plots embedded as base64)
+
+Additional plot files saved to results/reports/:
+  - roc_multiclass.png — multi-class one-vs-rest ROC grid (all 6 models)
+  - roc_binary.png     — binary ROC curves (SVM, RF, GBM)
+  - pr_curves.png      — precision-recall curves per model and class
+
+ROC/AUC Summary
+===============
+
+Multi-class macro AUC (one-vs-rest, 5 PPE classes):
+  CNN (PPENetFast)   0.9776   <-- best
+  Ensemble           0.9497
+  SVM                0.9427
+  GBM                0.9432
+  ExtraTrees         0.9238
+  RF                 0.9230
+
+Binary AUC (ppe vs no_ppe):
+  GBM (binary)       0.9083   <-- best binary
+  SVM (binary)       0.8915
+  RF  (binary)       0.8756
+
+What the report contains:
+  - Multi-class ROC curves (one-vs-rest) for every model
+  - Binary ROC curves for all binary classifiers
+  - Precision-Recall curves per model and per class
+  - Training history (CNN loss/accuracy over 30 epochs)
+  - Confusion matrices for all multi-class models
+  - Per-class F1 heatmap across all models
+  - CCTV validation summary (people detected, classified, violations per image)
+  - Model comparison bar chart (accuracy + macro F1)
+
+The test set used (726 samples, 20% stratified split, random_state=42) matches the
+split used during training, so all AUC numbers are directly comparable to the
+accuracy figures in results/models/prod_model_summary.csv.
+
+No models were skipped — all pkl files and the CNN checkpoint were loaded successfully.

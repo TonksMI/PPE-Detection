@@ -9,7 +9,10 @@
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(PYTHONIOENCODING=utf-8 python:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(git:*)"
     ]
   }
 }

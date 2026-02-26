@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "ppe-report-generator", "runs": [{"id": "eval-1-generate-full-report-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "The full PPE pipeline evaluation report has been generated successfully.\n\nReport saved to:\n  D:\\Claude\\PPE-Detection\\results\\reports\\ppe_evaluation_report.html\n  (self-contained HTML, 7.8 MB \u00e2\u20ac\u201d all plots embedded as base64)\n\nAdditional plot files saved to results/reports/:\n  - roc_multiclass.png \u00e2\u20ac\u201d multi-class one-vs-rest ROC grid (all 6 models)\n  - roc_binary.png     \u00e2\u20ac\u201d binary ROC curves (SVM, RF, GBM)\n  - pr_curves.png      \u00e2\u20ac\u201d precision-recall curves per model and class\n\nROC/AUC Summary\n===============\n\nMulti-class macro AUC (one-vs-rest, 5 PPE classes):\n  CNN (PPENetFast)   0.9776   <-- best\n  Ensemble           0.9497\n  SVM                0.9427\n  GBM                0.9432\n  ExtraTrees         0.9238\n  RF                 0.9230\n\nBinary AUC (ppe vs no_ppe):\n  GBM (binary)       0.9083   <-- best binary\n  SVM (binary)       0.8915\n  RF  (binary)       0.8756\n\nWhat the report contains:\n  - Multi-class ROC curves (one-vs-rest) for every model\n  - Binary ROC curves for all binary classifiers\n  - Precision-Recall curves per model and per class\n  - Training history (CNN loss/accuracy over 30 epochs)\n  - Confusion matrices for all multi-class models\n  - Per-class F1 heatmap across all models\n  - CCTV validation summary (people detected, classified, violations per image)\n  - Model comparison bar chart (accuracy + macro F1)\n\nThe test set used (726 samples, 20% stratified split, random_state=42) matches the\nsplit used during training, so all AUC numbers are directly comparable to the\naccuracy figures in results/models/prod_model_summary.csv.\n\nNo models were skipped \u00e2\u20ac\u201d all pkl files and the CNN checkpoint were loaded successfully.\n"}], "grading": {"eval_id": 1, "configuration": "with_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "File exists, 7.8 MB"}, {"text": "roc_multiclass.png exists in results/reports/", "passed": true, "evidence": "File exists, 207 KB"}, {"text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN", "passed": true, "evidence": "Table in response lists all 6 with individual AUC scores"}, {"text": "Response includes specific AUC scores (numbers like 0.9xx)", "passed": true, "evidence": "CNN 0.9776, Ensemble 0.9497, GBM 0.9432, SVM 0.9427, ET 0.9238, RF 0.9230"}, {"text": "Response tells user where the HTML report is saved", "passed": true, "evidence": "Explicitly states results/reports/ppe_evaluation_report.html"}], "summary": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5}}}, {"id": "eval-1-generate-full-report-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "I generated the full PPE pipeline evaluation report with ROC and AUC curves for all models. Here is a complete summary of what was produced.\n\n---\n\nTASK COMPLETED: Full PPE Pipeline Evaluation Report\n====================================================\n\nScript created: D:/Claude/PPE-Detection/src/ppe_full_evaluation_report.py\n\nThe script loaded the cached features and trained models, ran inference across all 6 models on the held-out test split (20% of 3,626 crops = 726 samples), computed all metrics, and saved 10 output files to D:/Claude/PPE-Detection/results/models/.\n\n---\n\nOUTPUT FILES GENERATED\n-----------------------\n\n  report_roc_binary.png          (151.7 KB)\n    - Binary ROC curves for SVM, RF, ExtraTrees, HistGBM (PPE present vs no_ppe)\n    - Full ROC panel + zoomed top-left corner panel\n\n  report_roc_multiclass.png      (450.3 KB)\n    - One-vs-Rest ROC curves for all 6 models (SVM, RF, ExtraTrees, HistGBM, Ensemble, CNN)\n    - Separate subplot per model, each showing 5 class curves + macro average\n\n  report_roc_per_class.png       (201.6 KB)\n    - All models overlaid per class, one subplot per class (5 subplots)\n    - Enables direct cross-model comparison for each PPE class\n\n  report_auc_heatmap.png         (114.2 KB)\n    - Heatmap of AUC scores: models (rows) x classes (columns) + Macro Avg column\n    - Color scale from 0.70 to 1.00 (RdYlGn)\n\n  report_pr_curves.png           (507.2 KB)\n    - Precision-Recall curves (One-vs-Rest) for all 6 models\n    - Per-class Average Precision (AP) annotated in legend\n\n  report_confusion_all.png       (209.8 KB)\n    - Confusion matrices for all 6 multi-class models in a 2x3 grid\n\n  report_f1_heatmap.png          (104.1 KB)\n    - Per-class F1 score heatmap across all models + Macro F1 column\n\n  report_model_comparison.png    (155.1 KB)\n    - Side-by-side bar charts: multi-class accuracy vs macro F1, and binary accuracy vs macro F1\n\n  report_dashboard.png           (372.3 KB)\n    - Comprehensive single-page summary dashboard with dark theme:\n      accuracy bars, binary accuracy bars, ROC mini-chart, AUC heatmap, key findings table\n\n  report_full_summary.csv        (0.8 KB)\n    - CSV with Accuracy, Macro F1, Weighted F1, Macro AUC, and per-class F1 for every model/task\n\n---\n\nNUMERICAL RESULTS\n-----------------\n\nMULTI-CLASS RESULTS (5 classes: full_ppe, helmet, no_ppe, partial_ppe, safety_vest)\n\n  Model         Accuracy   Macro F1   Weighted F1   Macro AUC\n  SVM           0.7631     0.7446     0.7647         0.9427\n  RF            0.7300     0.7078     0.7272         0.9230\n  ExtraTrees    0.7176     0.6929     0.7133         0.9238\n  HistGBM       0.7672     0.7452     0.7657         0.9432\n  Ensemble      0.7948     0.7771     0.7939         0.9497\n  CNN PPENet    0.8733     0.8564     0.8722         0.9776\n\nBINARY RESULTS (ppe_present vs no_ppe)\n\n  Model         Accuracy   Macro F1   AUC\n  SVM           0.8444     0.8003     0.8915\n  RF            0.8140     0.7185     0.8756\n  ExtraTrees    0.7837     0.6219     0.8748\n  HistGBM       0.8320     0.7895     0.9083\n\nPER-CLASS AUC (One-vs-Rest, multi-class)\n\n  Model         full_ppe   helmet   no_ppe   partial_ppe   safety_vest   Macro Avg\n  SVM           0.9329     0.9809   0.9289   0.8823        0.9884        0.9427\n  RF            0.9207     0.9564   0.8968   0.8762        0.9648        0.9230\n  ExtraTrees    0.9246     0.9508   0.9030   0.8731        0.9675        0.9238\n  HistGBM       0.9299     0.9770   0.9374   0.8875        0.9843        0.9432\n  Ensemble      0.9397     0.9805   0.9464   0.8974        0.9844        0.9497\n  CNN           0.9650     0.9905   0.9867   0.9494        0.9962        0.9776\n\nCNN PER-CLASS F1\n\n  full_ppe:      0.7722\n  helmet:        0.9146\n  no_ppe:        0.9060\n  partial_ppe:   0.7603\n  safety_vest:   0.9289\n\n---\n\nKEY FINDINGS\n------------\n\n1. CNN PPENet dominates all metrics: 87.3% multi-class accuracy, macro AUC 0.9776, trained for\n   100 epochs on 64x64 crops with AdamW + OneCycleLR.\n\n2. Among ML models, the soft-voting Ensemble (SVM + RF + ExtraTrees + HistGBM) achieves the best\n   multi-class accuracy at 79.5% and macro AUC 0.9497, confirming the value of model combination.\n\n3. SVM achieves the best binary AUC (0.8915) and best binary accuracy (84.4%), making it the\n   recommended ML-only baseline for the binary PPE present/absent task.\n\n4. HistGBM leads ML models in binary AUC (0.9083) despite slightly lower accuracy than SVM,\n   suggesting it produces better-calibrated probability scores for binary classification.\n\n5. partial_ppe is the hardest class across all models (lowest AUC ~0.87-0.95), consistent with\n   its visual ambiguity. helmet and safety_vest are the easiest (AUC ~0.95-0.99).\n\n6. All models achieve AUC > 0.87 on every class, confirming strong discriminative power even\n   for the weakest ML baselines. The CNN reaches AUC > 0.94 on all classes.\n\n---\n\nHOW THE REPORT WAS GENERATED\n------------------------------\n\n- Data: loaded from D:/Claude/cache/ (crops_X_600.npy, crops_y_600.npy, features_600.npy)\n- Models: loaded from D:/Claude/PPE-Detection/results/models/ (.pkl for ML, .pth for CNN)\n- Test split: same random seed (42) and stratification as used during training (20% = 726 samples)\n- CNN inference: ran on GPU (CUDA, RTX 5070) in batches of 256\n- Multi-class ROC: One-vs-Rest strategy using label_binarize + sklearn roc_curve\n- Binary ROC: direct probability for the ppe_present class vs yteb ground truth\n- All plots saved at 150 DPI to D:/Claude/PPE-Detection/results/models/\n"}], "grading": {"eval_id": 1, "configuration": "without_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": false, "evidence": "Agent wrote PNGs to results/models/, not an HTML report to results/reports/"}, {"text": "roc_multiclass.png exists in results/reports/", "passed": false, "evidence": "Generated report_roc_multiclass.png to results/models/ (wrong location, different name)"}, {"text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN", "passed": true, "evidence": "All 6 models listed in summary table"}, {"text": "Response includes specific AUC scores (numbers like 0.9xx)", "passed": true, "evidence": "AUC values computed and reported (CNN 0.9776, etc.)"}, {"text": "Response tells user where the HTML report is saved", "passed": false, "evidence": "No HTML report generated; agent pointed to PNG files instead"}], "summary": {"pass_rate": 0.4, "passed": 2, "failed": 3, "total": 5}}}, {"id": "eval-2-show-model-performance-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "I've generated the full evaluation report. Here's a summary of how all models are doing, including AUC scores.\n\n---\n\nREPORT SAVED TO:\n  results/reports/ppe_evaluation_report.html  (7.8 MB, fully self-contained)\n\n---\n\nMULTI-CLASS ROC/AUC (one-vs-rest, macro average across 5 classes):\n\n  CNN PPENetFast       AUC = 0.978   <-- BEST\n  Ensemble             AUC = 0.950\n  SVM                  AUC = 0.943\n  GBM (HistGBM)        AUC = 0.943\n  ExtraTrees           AUC = 0.924\n  RandomForest         AUC = 0.923\n\nThe CNN is the clear winner on AUC (0.978), beating the next-best model (Ensemble) by ~0.028.\n\n---\n\nBINARY ROC/AUC (PPE vs no-PPE):\n\n  GBM (HistGBM)        AUC = 0.908   <-- BEST binary\n  SVM                  AUC = 0.892\n  RandomForest         AUC = 0.876\n\n---\n\nMULTI-CLASS ACCURACY & F1 (from prod_model_summary.csv):\n\n  CNN PPENetFast       Acc = 87.3%   Macro F1 = 0.856\n  Ensemble             Acc = 79.5%   Macro F1 = 0.777\n  GBM (HistGBM)        Acc = 76.7%   Macro F1 = 0.745\n  SVM                  Acc = 76.3%   Macro F1 = 0.745\n  RandomForest         Acc = 73.0%   Macro F1 = 0.708\n  ExtraTrees           Acc = 71.8%   Macro F1 = 0.693\n\n---\n\nBINARY ACCURACY (PPE vs no-PPE):\n\n  SVM                  Acc = 84.4%   Macro F1 = 0.800\n  GBM (HistGBM)        Acc = 83.2%   Macro F1 = 0.790\n  RandomForest         Acc = 81.4%   Macro F1 = 0.719\n  ExtraTrees           Acc = 78.4%   Macro F1 = 0.622\n\n---\n\nCCTV VALIDATION SUMMARY (sliding-window detection on site images):\n\n  Image    People  Classified  Violations\n  0.JPG       2         2          2\n  1.JPG       3         3          2\n  10.jpg      1         1          0\n  2.jpg       2         2          0\n  3.jpg       1         1          0\n  4.jpg     205       156         75\n\nImage 4.jpg (crowd scene) flagged 75 PPE violations out of 156 classified detections.\n\n---\n\nThe HTML report at results/reports/ppe_evaluation_report.html contains:\n  - Multi-class one-vs-rest ROC curves for all 6 models\n  - Binary ROC curves (SVM, RF, GBM)\n  - Precision-Recall curves per model and per class\n  - CNN training history (loss + accuracy over epochs)\n  - Confusion matrices for all multi-class models\n  - Per-class F1 heatmap across models\n  - CCTV validation chart\n  - Model comparison bar chart\n\nBottom line: the CNN (PPENetFast) has the best AUC at 0.978, and also leads on accuracy (87.3%) and macro F1 (0.856). Among ML-only models, the Ensemble and GBM are closest competitors on AUC.\n"}], "grading": {"eval_id": 2, "configuration": "with_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Report generated and path stated in response"}, {"text": "Response identifies CNN as the best model by AUC", "passed": true, "evidence": "CNN PPENetFast listed as BEST with AUC 0.978"}, {"text": "Response provides actual AUC numbers for at least 3 models", "passed": true, "evidence": "All 6 multi-class AUC values given plus 3 binary AUC values"}, {"text": "Response points user to the HTML report file", "passed": true, "evidence": "Explicitly says 'results/reports/ppe_evaluation_report.html (7.8 MB, fully self-contained)'"}], "summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}}}, {"id": "eval-2-show-model-performance-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "Here is a full breakdown of how all models are performing, pulled from results/models/prod_model_summary.csv, prod_roc_curves.png, prod_model_comparison.png, and the per-class F1 heatmap.\n\n---\n\nMULTI-CLASS RESULTS (5 classes: full_ppe, helmet, no_ppe, partial_ppe, safety_vest)\nDataset: 3,626 crops from MinhNKB + Jomarkow, 80/20 train/test split\n\nModel                              | Accuracy | Macro F1 | Weighted F1 | Train Time\n-----------------------------------|----------|----------|-------------|----------\nSVM (PCA->RBF, multi)              |  76.3%   |  0.7446  |   0.7647    |    4.8s\nRandomForest (400 trees, multi)    |  73.0%   |  0.7078  |   0.7272    |    3.9s\nExtraTrees (400 trees, multi)      |  71.8%   |  0.6929  |   0.7133    |    1.2s\nHistGBM (400 rounds, multi)        |  76.7%   |  0.7452  |   0.7657    |  190.0s\nEnsemble (SVM+RF+ET+GBM, multi)    |  79.5%   |  0.7771  |   0.7939    |  198.8s\nCNN PPENet (100 epochs)            |  87.3%   |  0.8564  |   0.8722    |   51.9s\n\nBINARY RESULTS (ppe_present vs no_ppe)\n\nModel                              | Accuracy | Macro F1 | Weighted F1 | Train Time\n-----------------------------------|----------|----------|-------------|----------\nSVM (PCA->RBF, binary)             |  84.4%   |  0.8003  |   0.8424    |    3.0s\nRandomForest (400 trees, binary)   |  81.4%   |  0.7185  |   0.7921    |    3.3s\nExtraTrees (400 trees, binary)     |  78.4%   |  0.6219  |   0.7330    |    1.1s\nHistGBM (400 rounds, binary)       |  83.2%   |  0.7895  |   0.8320    |   29.4s\n\n---\n\nAUC SCORES (Binary PPE/no-PPE classification, from prod_roc_curves.png)\n\n  SVM (PCA->RBF, binary):        AUC = 0.891  <-- BEST\n  RandomForest (400 trees):      AUC = 0.876\n  ExtraTrees (400 trees):        AUC = 0.875\n\nThe SVM has the highest AUC at 0.891. All three binary classifiers are competitive and well above random (0.5), with the SVM pulling clearly ahead especially in the low-FPR region (the top-left corner of the ROC plot), which is exactly where you want performance for a safety detection system \u00e2\u20ac\u201d minimising false negatives at low false alarm rates.\n\nNote: ROC/AUC was only computed for the binary models. The CNN and multi-class models do not have a single AUC value in the current results (multi-class AUC would require one-vs-rest curves per class, which were not generated).\n\n---\n\nPER-CLASS F1 SCORES (from prod_f1_heatmap.png)\n\nClass        | SVM    | RF     | ET     | GBM    | Ensemble | CNN\n-------------|--------|--------|--------|--------|----------|------\nfull_ppe     | 0.608  | 0.595  | 0.558  | 0.651  | 0.692    | 0.772\nhelmet       | 0.879  | 0.835  | 0.821  | 0.867  | 0.883    | 0.915\nno_ppe       | 0.734  | 0.709  | 0.693  | 0.769  | 0.788    | 0.906\npartial_ppe  | 0.603  | 0.566  | 0.548  | 0.559  | 0.642    | 0.760\nsafety_vest  | 0.898  | 0.835  | 0.845  | 0.880  | 0.880    | 0.929\n\nThe CNN dominates across every class. The two hardest classes for all models are full_ppe and partial_ppe \u00e2\u20ac\u201d these are the underrepresented, visually ambiguous categories. The CNN still reaches F1=0.77 and F1=0.76 on them respectively, versus F1=0.61-0.69 for the ML baselines.\n\n---\n\nCNN TRAINING (from prod_cnn_training.png and prod_cnn_confusion.png)\n\n- Architecture: PPENet (64x64 input, 3 conv blocks 32->64->128 filters, AdaptiveAvgPool, FC 128->256->5)\n- Training: 100 epochs, OneCycleLR scheduler (max_lr=1e-3, warmup 20%), label smoothing=0.05\n- Best validation accuracy: 87.3%\n- The training curve shows healthy convergence \u00e2\u20ac\u201d train and val loss decrease together with no sign of severe overfitting. Val accuracy stabilises around epoch 60-70.\n- Confusion matrix highlights: helmet (182/200 correct), no_ppe (188/200 correct), safety_vest (111/120 correct). Main confusion is between full_ppe and partial_ppe (20 misclassified), which is expected given their visual similarity.\n\n---\n\nCCTV PIPELINE RESULTS (from prod_cctv_results.csv)\n\nThe two-stage HOG+CNN pipeline was tested on a small set of validation images:\n- Image \"4.jpg\": 205 people detected, 156 classified, 75 violations flagged\n- Smaller scenes (0.JPG, 1.JPG, 2.jpg, 3.jpg, 10.jpg): 1-3 people per frame, correctly classified\n\n---\n\nSUMMARY \u00e2\u20ac\u201d WHICH MODEL WINS?\n\nOverall best model (multi-class accuracy + F1): CNN PPENet at 87.3% accuracy, macro F1=0.856\nBest AUC (binary ppe/no-ppe discrimination): SVM (PCA->RBF) at AUC=0.891\nBest ML-only model (no CNN): Ensemble (SVM+RF+ET+GBM) at 79.5% multi-class accuracy\nFastest model: ExtraTrees at 1.1-1.2s training time\n\nThe CNN is the clear winner for overall classification quality. The SVM is the best choice if you need a fast, interpretable binary detector with the highest AUC. The ensemble adds ~3pp over the best single ML model but takes ~200s to train.\n\nKey area for improvement: partial_ppe and full_ppe remain the weak spots across all models (F1 in the 0.55-0.77 range). Class weighting or targeted augmentation on these two categories is the highest-leverage next step.\n"}], "grading": {"eval_id": 2, "configuration": "without_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Pre-existing report from skill run still present; agent did not generate it but file exists"}, {"text": "Response identifies CNN as the best model by AUC", "passed": false, "evidence": "Agent said 'SVM has highest AUC at 0.891' (binary only); stated multi-class AUC 'not generated in current pipeline' \u00e2\u20ac\u201d missed CNN 0.978"}, {"text": "Response provides actual AUC numbers for at least 3 models", "passed": true, "evidence": "3 binary AUC values given (SVM 0.891, RF 0.876, ET 0.875)"}, {"text": "Response points user to the HTML report file", "passed": false, "evidence": "No report generated or referenced; agent just read existing CSVs and PNGs"}], "summary": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4}}}, {"id": "eval-3-cctv-report-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "The evaluation report has been generated and saved to:\n\n  results/reports/ppe_evaluation_report.html  (7.8 MB, fully self-contained)\n\nThe report includes multi-class ROC/AUC curves, binary ROC curves, precision-recall curves, confusion matrices, per-class F1 heatmap, training history, CCTV validation summary, and a model comparison bar chart.\n\n---\n\nMODEL PERFORMANCE SUMMARY (Multi-class)\n-----------------------------------------\nModel                          Accuracy    Macro F1    Macro AUC\nCNN PPENet (30 ep)               87.33%      0.856       0.978\nEnsemble (SVM+RF+ET+GBM)         79.48%      0.777       0.950\nSVM (PCA+RBF)                    76.31%      0.745       0.943\nHistGBM (400 rounds)             76.72%      0.745       0.943\nRandomForest (400 trees)         73.00%      0.708       0.923\nExtraTrees (400 trees)           71.76%      0.693       0.924\n\nBinary (PPE / No-PPE) classifiers:\n  SVM:            84.44% accuracy  |  AUC 0.892\n  HistGBM:        83.20% accuracy  |  AUC 0.908\n  RandomForest:   81.40% accuracy  |  AUC 0.876\n  ExtraTrees:     78.37% accuracy  |  AUC (binary)\n\nThe CNN is the top performer across all metrics. The Ensemble closes the gap considerably on the ML side. AUC scores are uniformly high (all models \u00e2\u2030\u00a5 0.92 for multi-class), indicating strong class separation even for models with lower raw accuracy.\n\n---\n\nCCTV VALIDATION RESULTS\n--------------------------\nThe CCTV sliding-window validation ran over 6 unique images (results duplicated in the CSV per detection pass):\n\n  Image      People detected    Classified    Violations\n  0.JPG            2                2             2\n  1.JPG            3                3             2\n  2.jpg            2                2             0\n  3.jpg            1                1             0\n  4.jpg          205              156            75\n  10.jpg           1                1             0\n\nKey observations:\n- 4.jpg (dense crowd scene) had 205 detections, 156 classified, and 75 PPE violations \u00e2\u20ac\u201d the most demanding test case.\n- Smaller scenes (1\u00e2\u20ac\u201c3 people) achieved 100% classification rate.\n- Across all images, violation detection is active and flagging non-compliant individuals.\n\n---\n\nOUTPUT FILES\n-------------\n  results/reports/ppe_evaluation_report.html  \u00e2\u20ac\u201d main self-contained report (open in any browser)\n  results/reports/roc_multiclass.png          \u00e2\u20ac\u201d one-vs-rest ROC grid for all multi-class models\n  results/reports/roc_binary.png              \u00e2\u20ac\u201d binary ROC curves\n  results/reports/pr_curves.png              \u00e2\u20ac\u201d precision-recall curves per class/model\n\nOpen the HTML report in a browser to view all interactive plots and the full CCTV validation section.\n"}], "grading": {"eval_id": 3, "configuration": "with_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Report generated and file confirmed at that path"}, {"text": "Response mentions CCTV detection results (people detected, violations, or image names)", "passed": true, "evidence": "Full per-image table: 0.JPG 2 detected 2 violations, 4.jpg 205 detected 75 violations, etc."}, {"text": "Response tells user where the report file is", "passed": true, "evidence": "Path results/reports/ppe_evaluation_report.html explicitly stated"}, {"text": "Response includes or references model performance summary", "passed": true, "evidence": "Full accuracy+AUC table for all 6 multi-class models included"}], "summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}}}, {"id": "eval-3-cctv-report-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "I've created a three-page visual report combining the CCTV validation results and model performance summary. The report is generated by a new script at:\n\n  D:/Claude/PPE-Detection/src/ppe_cctv_report.py\n\nThree output PNG files were saved to results/plots/:\n\n  1. cctv_report_page1.png  (1.2 MB)\n     - Full CCTV validation image (prod_cctv_validation.png embedded)\n     - Per-image detection breakdown bar chart (people detected / classified / violations)\n     - PPE compliance pie chart across all scenes\n\n  2. cctv_report_page2.png  (224 KB)\n     - Multi-class model comparison grouped bar chart (Accuracy + Macro F1)\n     - Binary model comparison grouped bar chart\n     - Full model summary table (all 10 models with accuracy, F1, and train time)\n\n  3. cctv_report_dashboard.png  (144 KB)\n     - Single-page KPI dashboard with three headline metrics\n     - Horizontal bar charts for multi-class and binary accuracy\n     - CCTV compliance pie chart\n\nKey findings shown in the report:\n\nCCTV Validation (6 unique scenes, from prod_cctv_results.csv):\n  - Total people detected:    214\n  - Total classified:         165\n  - Violations flagged:        79\n  - Violation rate:           47.9%\n  - Note: scene 4.jpg is a large crowd (205 people, 156 classified, 75 violations)\n    and is separated from the per-image bar chart to keep scale readable.\n\nModel Performance (from prod_model_summary.csv):\n  Multi-class (5 classes):\n    - CNN PPENet (100ep):             87.33% accuracy, 0.856 Macro F1  [best]\n    - Ensemble (SVM+RF+ET+GBM):       79.48% accuracy, 0.777 Macro F1\n    - HistGBM (400 rounds):           76.72% accuracy, 0.745 Macro F1\n    - SVM (PCA->RBF):                 76.31% accuracy, 0.745 Macro F1\n    - RandomForest (400 trees):       73.00% accuracy, 0.708 Macro F1\n    - ExtraTrees (400 trees):         71.76% accuracy, 0.693 Macro F1\n\n  Binary (PPE vs No-PPE):\n    - SVM (PCA->RBF):                 84.44% accuracy, 0.800 Macro F1  [best]\n    - HistGBM (400 rounds):           83.20% accuracy, 0.790 Macro F1\n    - RandomForest (400 trees):       81.40% accuracy, 0.719 Macro F1\n    - ExtraTrees (400 trees):         78.37% accuracy, 0.622 Macro F1\n\nThe CNN PPENetFast is the clear winner on multi-class classification (87.33%), outperforming the best traditional ML model (Ensemble at 79.48%) by nearly 8 percentage points. For the simpler binary task, SVM achieves the best accuracy (84.44%) with a much faster training time (3 seconds vs 51.9 seconds for the CNN).\n"}], "grading": {"eval_id": 3, "configuration": "without_skill", "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Pre-existing from skill run; agent generated its own PNGs to results/plots/ instead"}, {"text": "Response mentions CCTV detection results (people detected, violations, or image names)", "passed": true, "evidence": "Detailed breakdown: 214 total detected, 165 classified, 79 violations, per-image table"}, {"text": "Response tells user where the report file is", "passed": true, "evidence": "Pointed to 3 PNG files in results/plots/"}, {"text": "Response includes or references model performance summary", "passed": true, "evidence": "Full model accuracy table from prod_model_summary.csv shown"}], "summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "ppe-report-generator", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-02-26T05:47:13Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 64.5, "tokens": 15313, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "File exists, 7.8 MB"}, {"text": "roc_multiclass.png exists in results/reports/", "passed": true, "evidence": "File exists, 207 KB"}, {"text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN", "passed": true, "evidence": "Table in response lists all 6 with individual AUC scores"}, {"text": "Response includes specific AUC scores (numbers like 0.9xx)", "passed": true, "evidence": "CNN 0.9776, Ensemble 0.9497, GBM 0.9432, SVM 0.9427, ET 0.9238, RF 0.9230"}, {"text": "Response tells user where the HTML report is saved", "passed": true, "evidence": "Explicitly states results/reports/ppe_evaluation_report.html"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 87.4, "tokens": 18002, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Report generated and path stated in response"}, {"text": "Response identifies CNN as the best model by AUC", "passed": true, "evidence": "CNN PPENetFast listed as BEST with AUC 0.978"}, {"text": "Response provides actual AUC numbers for at least 3 models", "passed": true, "evidence": "All 6 multi-class AUC values given plus 3 binary AUC values"}, {"text": "Response points user to the HTML report file", "passed": true, "evidence": "Explicitly says 'results/reports/ppe_evaluation_report.html (7.8 MB, fully self-contained)'"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 81.4, "tokens": 16754, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Report generated and file confirmed at that path"}, {"text": "Response mentions CCTV detection results (people detected, violations, or image names)", "passed": true, "evidence": "Full per-image table: 0.JPG 2 detected 2 violations, 4.jpg 205 detected 75 violations, etc."}, {"text": "Response tells user where the report file is", "passed": true, "evidence": "Path results/reports/ppe_evaluation_report.html explicitly stated"}, {"text": "Response includes or references model performance summary", "passed": true, "evidence": "Full accuracy+AUC table for all 6 multi-class models included"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.4, "passed": 2, "failed": 3, "total": 5, "time_seconds": 293.8, "tokens": 54108, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": false, "evidence": "Agent wrote PNGs to results/models/, not an HTML report to results/reports/"}, {"text": "roc_multiclass.png exists in results/reports/", "passed": false, "evidence": "Generated report_roc_multiclass.png to results/models/ (wrong location, different name)"}, {"text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN", "passed": true, "evidence": "All 6 models listed in summary table"}, {"text": "Response includes specific AUC scores (numbers like 0.9xx)", "passed": true, "evidence": "AUC values computed and reported (CNN 0.9776, etc.)"}, {"text": "Response tells user where the HTML report is saved", "passed": false, "evidence": "No HTML report generated; agent pointed to PNG files instead"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4, "time_seconds": 92.0, "tokens": 36964, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Pre-existing report from skill run still present; agent did not generate it but file exists"}, {"text": "Response identifies CNN as the best model by AUC", "passed": false, "evidence": "Agent said 'SVM has highest AUC at 0.891' (binary only); stated multi-class AUC 'not generated in current pipeline' \u00e2\u20ac\u201d missed CNN 0.978"}, {"text": "Response provides actual AUC numbers for at least 3 models", "passed": true, "evidence": "3 binary AUC values given (SVM 0.891, RF 0.876, ET 0.875)"}, {"text": "Response points user to the HTML report file", "passed": false, "evidence": "No report generated or referenced; agent just read existing CSVs and PNGs"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 175.1, "tokens": 40687, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "HTML report file exists at results/reports/ppe_evaluation_report.html", "passed": true, "evidence": "Pre-existing from skill run; agent generated its own PNGs to results/plots/ instead"}, {"text": "Response mentions CCTV detection results (people detected, violations, or image names)", "passed": true, "evidence": "Detailed breakdown: 214 total detected, 165 classified, 79 violations, per-image table"}, {"text": "Response tells user where the report file is", "passed": true, "evidence": "Pointed to 3 PNG files in results/plots/"}, {"text": "Response includes or references model performance summary", "passed": true, "evidence": "Full model accuracy table from prod_model_summary.csv shown"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 77.7667, "stddev": 11.8745, "min": 64.5, "max": 87.4}, "tokens": {"mean": 16689.6667, "stddev": 1345.6539, "min": 15313, "max": 18002}}, "without_skill": {"pass_rate": {"mean": 0.6333, "stddev": 0.3215, "min": 0.4, "max": 1.0}, "time_seconds": {"mean": 186.9667, "stddev": 101.422, "min": 92.0, "max": 293.8}, "tokens": {"mean": 43919.6667, "stddev": 9017.582, "min": 36964, "max": 54108}}, "delta": {"pass_rate": "+0.37", "time_seconds": "-109.2", "tokens": "-27230"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

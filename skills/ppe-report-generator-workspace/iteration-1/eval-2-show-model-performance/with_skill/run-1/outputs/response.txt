@@ -1,0 +1,75 @@
+I've generated the full evaluation report. Here's a summary of how all models are doing, including AUC scores.
+
+---
+
+REPORT SAVED TO:
+  results/reports/ppe_evaluation_report.html  (7.8 MB, fully self-contained)
+
+---
+
+MULTI-CLASS ROC/AUC (one-vs-rest, macro average across 5 classes):
+
+  CNN PPENetFast       AUC = 0.978   <-- BEST
+  Ensemble             AUC = 0.950
+  SVM                  AUC = 0.943
+  GBM (HistGBM)        AUC = 0.943
+  ExtraTrees           AUC = 0.924
+  RandomForest         AUC = 0.923
+
+The CNN is the clear winner on AUC (0.978), beating the next-best model (Ensemble) by ~0.028.
+
+---
+
+BINARY ROC/AUC (PPE vs no-PPE):
+
+  GBM (HistGBM)        AUC = 0.908   <-- BEST binary
+  SVM                  AUC = 0.892
+  RandomForest         AUC = 0.876
+
+---
+
+MULTI-CLASS ACCURACY & F1 (from prod_model_summary.csv):
+
+  CNN PPENetFast       Acc = 87.3%   Macro F1 = 0.856
+  Ensemble             Acc = 79.5%   Macro F1 = 0.777
+  GBM (HistGBM)        Acc = 76.7%   Macro F1 = 0.745
+  SVM                  Acc = 76.3%   Macro F1 = 0.745
+  RandomForest         Acc = 73.0%   Macro F1 = 0.708
+  ExtraTrees           Acc = 71.8%   Macro F1 = 0.693
+
+---
+
+BINARY ACCURACY (PPE vs no-PPE):
+
+  SVM                  Acc = 84.4%   Macro F1 = 0.800
+  GBM (HistGBM)        Acc = 83.2%   Macro F1 = 0.790
+  RandomForest         Acc = 81.4%   Macro F1 = 0.719
+  ExtraTrees           Acc = 78.4%   Macro F1 = 0.622
+
+---
+
+CCTV VALIDATION SUMMARY (sliding-window detection on site images):
+
+  Image    People  Classified  Violations
+  0.JPG       2         2          2
+  1.JPG       3         3          2
+  10.jpg      1         1          0
+  2.jpg       2         2          0
+  3.jpg       1         1          0
+  4.jpg     205       156         75
+
+Image 4.jpg (crowd scene) flagged 75 PPE violations out of 156 classified detections.
+
+---
+
+The HTML report at results/reports/ppe_evaluation_report.html contains:
+  - Multi-class one-vs-rest ROC curves for all 6 models
+  - Binary ROC curves (SVM, RF, GBM)
+  - Precision-Recall curves per model and per class
+  - CNN training history (loss + accuracy over epochs)
+  - Confusion matrices for all multi-class models
+  - Per-class F1 heatmap across models
+  - CCTV validation chart
+  - Model comparison bar chart
+
+Bottom line: the CNN (PPENetFast) has the best AUC at 0.978, and also leads on accuracy (87.3%) and macro F1 (0.856). Among ML-only models, the Ensemble and GBM are closest competitors on AUC.

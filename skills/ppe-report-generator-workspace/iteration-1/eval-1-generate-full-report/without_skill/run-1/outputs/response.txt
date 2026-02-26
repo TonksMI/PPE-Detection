@@ -1,0 +1,128 @@
+I generated the full PPE pipeline evaluation report with ROC and AUC curves for all models. Here is a complete summary of what was produced.
+
+---
+
+TASK COMPLETED: Full PPE Pipeline Evaluation Report
+====================================================
+
+Script created: D:/Claude/PPE-Detection/src/ppe_full_evaluation_report.py
+
+The script loaded the cached features and trained models, ran inference across all 6 models on the held-out test split (20% of 3,626 crops = 726 samples), computed all metrics, and saved 10 output files to D:/Claude/PPE-Detection/results/models/.
+
+---
+
+OUTPUT FILES GENERATED
+-----------------------
+
+  report_roc_binary.png          (151.7 KB)
+    - Binary ROC curves for SVM, RF, ExtraTrees, HistGBM (PPE present vs no_ppe)
+    - Full ROC panel + zoomed top-left corner panel
+
+  report_roc_multiclass.png      (450.3 KB)
+    - One-vs-Rest ROC curves for all 6 models (SVM, RF, ExtraTrees, HistGBM, Ensemble, CNN)
+    - Separate subplot per model, each showing 5 class curves + macro average
+
+  report_roc_per_class.png       (201.6 KB)
+    - All models overlaid per class, one subplot per class (5 subplots)
+    - Enables direct cross-model comparison for each PPE class
+
+  report_auc_heatmap.png         (114.2 KB)
+    - Heatmap of AUC scores: models (rows) x classes (columns) + Macro Avg column
+    - Color scale from 0.70 to 1.00 (RdYlGn)
+
+  report_pr_curves.png           (507.2 KB)
+    - Precision-Recall curves (One-vs-Rest) for all 6 models
+    - Per-class Average Precision (AP) annotated in legend
+
+  report_confusion_all.png       (209.8 KB)
+    - Confusion matrices for all 6 multi-class models in a 2x3 grid
+
+  report_f1_heatmap.png          (104.1 KB)
+    - Per-class F1 score heatmap across all models + Macro F1 column
+
+  report_model_comparison.png    (155.1 KB)
+    - Side-by-side bar charts: multi-class accuracy vs macro F1, and binary accuracy vs macro F1
+
+  report_dashboard.png           (372.3 KB)
+    - Comprehensive single-page summary dashboard with dark theme:
+      accuracy bars, binary accuracy bars, ROC mini-chart, AUC heatmap, key findings table
+
+  report_full_summary.csv        (0.8 KB)
+    - CSV with Accuracy, Macro F1, Weighted F1, Macro AUC, and per-class F1 for every model/task
+
+---
+
+NUMERICAL RESULTS
+-----------------
+
+MULTI-CLASS RESULTS (5 classes: full_ppe, helmet, no_ppe, partial_ppe, safety_vest)
+
+  Model         Accuracy   Macro F1   Weighted F1   Macro AUC
+  SVM           0.7631     0.7446     0.7647         0.9427
+  RF            0.7300     0.7078     0.7272         0.9230
+  ExtraTrees    0.7176     0.6929     0.7133         0.9238
+  HistGBM       0.7672     0.7452     0.7657         0.9432
+  Ensemble      0.7948     0.7771     0.7939         0.9497
+  CNN PPENet    0.8733     0.8564     0.8722         0.9776
+
+BINARY RESULTS (ppe_present vs no_ppe)
+
+  Model         Accuracy   Macro F1   AUC
+  SVM           0.8444     0.8003     0.8915
+  RF            0.8140     0.7185     0.8756
+  ExtraTrees    0.7837     0.6219     0.8748
+  HistGBM       0.8320     0.7895     0.9083
+
+PER-CLASS AUC (One-vs-Rest, multi-class)
+
+  Model         full_ppe   helmet   no_ppe   partial_ppe   safety_vest   Macro Avg
+  SVM           0.9329     0.9809   0.9289   0.8823        0.9884        0.9427
+  RF            0.9207     0.9564   0.8968   0.8762        0.9648        0.9230
+  ExtraTrees    0.9246     0.9508   0.9030   0.8731        0.9675        0.9238
+  HistGBM       0.9299     0.9770   0.9374   0.8875        0.9843        0.9432
+  Ensemble      0.9397     0.9805   0.9464   0.8974        0.9844        0.9497
+  CNN           0.9650     0.9905   0.9867   0.9494        0.9962        0.9776
+
+CNN PER-CLASS F1
+
+  full_ppe:      0.7722
+  helmet:        0.9146
+  no_ppe:        0.9060
+  partial_ppe:   0.7603
+  safety_vest:   0.9289
+
+---
+
+KEY FINDINGS
+------------
+
+1. CNN PPENet dominates all metrics: 87.3% multi-class accuracy, macro AUC 0.9776, trained for
+   100 epochs on 64x64 crops with AdamW + OneCycleLR.
+
+2. Among ML models, the soft-voting Ensemble (SVM + RF + ExtraTrees + HistGBM) achieves the best
+   multi-class accuracy at 79.5% and macro AUC 0.9497, confirming the value of model combination.
+
+3. SVM achieves the best binary AUC (0.8915) and best binary accuracy (84.4%), making it the
+   recommended ML-only baseline for the binary PPE present/absent task.
+
+4. HistGBM leads ML models in binary AUC (0.9083) despite slightly lower accuracy than SVM,
+   suggesting it produces better-calibrated probability scores for binary classification.
+
+5. partial_ppe is the hardest class across all models (lowest AUC ~0.87-0.95), consistent with
+   its visual ambiguity. helmet and safety_vest are the easiest (AUC ~0.95-0.99).
+
+6. All models achieve AUC > 0.87 on every class, confirming strong discriminative power even
+   for the weakest ML baselines. The CNN reaches AUC > 0.94 on all classes.
+
+---
+
+HOW THE REPORT WAS GENERATED
+------------------------------
+
+- Data: loaded from D:/Claude/cache/ (crops_X_600.npy, crops_y_600.npy, features_600.npy)
+- Models: loaded from D:/Claude/PPE-Detection/results/models/ (.pkl for ML, .pth for CNN)
+- Test split: same random seed (42) and stratification as used during training (20% = 726 samples)
+- CNN inference: ran on GPU (CUDA, RTX 5070) in batches of 256
+- Multi-class ROC: One-vs-Rest strategy using label_binarize + sklearn roc_curve
+- Binary ROC: direct probability for the ppe_present class vs yteb ground truth
+- All plots saved at 150 DPI to D:/Claude/PPE-Detection/results/models/

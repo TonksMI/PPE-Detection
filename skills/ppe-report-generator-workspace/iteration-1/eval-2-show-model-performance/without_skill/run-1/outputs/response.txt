@@ -1,0 +1,81 @@
+Here is a full breakdown of how all models are performing, pulled from results/models/prod_model_summary.csv, prod_roc_curves.png, prod_model_comparison.png, and the per-class F1 heatmap.
+
+---
+
+MULTI-CLASS RESULTS (5 classes: full_ppe, helmet, no_ppe, partial_ppe, safety_vest)
+Dataset: 3,626 crops from MinhNKB + Jomarkow, 80/20 train/test split
+
+Model                              | Accuracy | Macro F1 | Weighted F1 | Train Time
+-----------------------------------|----------|----------|-------------|----------
+SVM (PCA->RBF, multi)              |  76.3%   |  0.7446  |   0.7647    |    4.8s
+RandomForest (400 trees, multi)    |  73.0%   |  0.7078  |   0.7272    |    3.9s
+ExtraTrees (400 trees, multi)      |  71.8%   |  0.6929  |   0.7133    |    1.2s
+HistGBM (400 rounds, multi)        |  76.7%   |  0.7452  |   0.7657    |  190.0s
+Ensemble (SVM+RF+ET+GBM, multi)    |  79.5%   |  0.7771  |   0.7939    |  198.8s
+CNN PPENet (100 epochs)            |  87.3%   |  0.8564  |   0.8722    |   51.9s
+
+BINARY RESULTS (ppe_present vs no_ppe)
+
+Model                              | Accuracy | Macro F1 | Weighted F1 | Train Time
+-----------------------------------|----------|----------|-------------|----------
+SVM (PCA->RBF, binary)             |  84.4%   |  0.8003  |   0.8424    |    3.0s
+RandomForest (400 trees, binary)   |  81.4%   |  0.7185  |   0.7921    |    3.3s
+ExtraTrees (400 trees, binary)     |  78.4%   |  0.6219  |   0.7330    |    1.1s
+HistGBM (400 rounds, binary)       |  83.2%   |  0.7895  |   0.8320    |   29.4s
+
+---
+
+AUC SCORES (Binary PPE/no-PPE classification, from prod_roc_curves.png)
+
+  SVM (PCA->RBF, binary):        AUC = 0.891  <-- BEST
+  RandomForest (400 trees):      AUC = 0.876
+  ExtraTrees (400 trees):        AUC = 0.875
+
+The SVM has the highest AUC at 0.891. All three binary classifiers are competitive and well above random (0.5), with the SVM pulling clearly ahead especially in the low-FPR region (the top-left corner of the ROC plot), which is exactly where you want performance for a safety detection system — minimising false negatives at low false alarm rates.
+
+Note: ROC/AUC was only computed for the binary models. The CNN and multi-class models do not have a single AUC value in the current results (multi-class AUC would require one-vs-rest curves per class, which were not generated).
+
+---
+
+PER-CLASS F1 SCORES (from prod_f1_heatmap.png)
+
+Class        | SVM    | RF     | ET     | GBM    | Ensemble | CNN
+-------------|--------|--------|--------|--------|----------|------
+full_ppe     | 0.608  | 0.595  | 0.558  | 0.651  | 0.692    | 0.772
+helmet       | 0.879  | 0.835  | 0.821  | 0.867  | 0.883    | 0.915
+no_ppe       | 0.734  | 0.709  | 0.693  | 0.769  | 0.788    | 0.906
+partial_ppe  | 0.603  | 0.566  | 0.548  | 0.559  | 0.642    | 0.760
+safety_vest  | 0.898  | 0.835  | 0.845  | 0.880  | 0.880    | 0.929
+
+The CNN dominates across every class. The two hardest classes for all models are full_ppe and partial_ppe — these are the underrepresented, visually ambiguous categories. The CNN still reaches F1=0.77 and F1=0.76 on them respectively, versus F1=0.61-0.69 for the ML baselines.
+
+---
+
+CNN TRAINING (from prod_cnn_training.png and prod_cnn_confusion.png)
+
+- Architecture: PPENet (64x64 input, 3 conv blocks 32->64->128 filters, AdaptiveAvgPool, FC 128->256->5)
+- Training: 100 epochs, OneCycleLR scheduler (max_lr=1e-3, warmup 20%), label smoothing=0.05
+- Best validation accuracy: 87.3%
+- The training curve shows healthy convergence — train and val loss decrease together with no sign of severe overfitting. Val accuracy stabilises around epoch 60-70.
+- Confusion matrix highlights: helmet (182/200 correct), no_ppe (188/200 correct), safety_vest (111/120 correct). Main confusion is between full_ppe and partial_ppe (20 misclassified), which is expected given their visual similarity.
+
+---
+
+CCTV PIPELINE RESULTS (from prod_cctv_results.csv)
+
+The two-stage HOG+CNN pipeline was tested on a small set of validation images:
+- Image "4.jpg": 205 people detected, 156 classified, 75 violations flagged
+- Smaller scenes (0.JPG, 1.JPG, 2.jpg, 3.jpg, 10.jpg): 1-3 people per frame, correctly classified
+
+---
+
+SUMMARY — WHICH MODEL WINS?
+
+Overall best model (multi-class accuracy + F1): CNN PPENet at 87.3% accuracy, macro F1=0.856
+Best AUC (binary ppe/no-ppe discrimination): SVM (PCA->RBF) at AUC=0.891
+Best ML-only model (no CNN): Ensemble (SVM+RF+ET+GBM) at 79.5% multi-class accuracy
+Fastest model: ExtraTrees at 1.1-1.2s training time
+
+The CNN is the clear winner for overall classification quality. The SVM is the best choice if you need a fast, interpretable binary detector with the highest AUC. The ensemble adds ~3pp over the best single ML model but takes ~200s to train.
+
+Key area for improvement: partial_ppe and full_ppe remain the weak spots across all models (F1 in the 0.55-0.77 range). Class weighting or targeted augmentation on these two categories is the highest-leverage next step.

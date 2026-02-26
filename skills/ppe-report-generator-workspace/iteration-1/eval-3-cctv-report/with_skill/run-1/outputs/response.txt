@@ -1,0 +1,55 @@
+The evaluation report has been generated and saved to:
+
+  results/reports/ppe_evaluation_report.html  (7.8 MB, fully self-contained)
+
+The report includes multi-class ROC/AUC curves, binary ROC curves, precision-recall curves, confusion matrices, per-class F1 heatmap, training history, CCTV validation summary, and a model comparison bar chart.
+
+---
+
+MODEL PERFORMANCE SUMMARY (Multi-class)
+-----------------------------------------
+Model                          Accuracy    Macro F1    Macro AUC
+CNN PPENet (30 ep)               87.33%      0.856       0.978
+Ensemble (SVM+RF+ET+GBM)         79.48%      0.777       0.950
+SVM (PCA+RBF)                    76.31%      0.745       0.943
+HistGBM (400 rounds)             76.72%      0.745       0.943
+RandomForest (400 trees)         73.00%      0.708       0.923
+ExtraTrees (400 trees)           71.76%      0.693       0.924
+
+Binary (PPE / No-PPE) classifiers:
+  SVM:            84.44% accuracy  |  AUC 0.892
+  HistGBM:        83.20% accuracy  |  AUC 0.908
+  RandomForest:   81.40% accuracy  |  AUC 0.876
+  ExtraTrees:     78.37% accuracy  |  AUC (binary)
+
+The CNN is the top performer across all metrics. The Ensemble closes the gap considerably on the ML side. AUC scores are uniformly high (all models ≥ 0.92 for multi-class), indicating strong class separation even for models with lower raw accuracy.
+
+---
+
+CCTV VALIDATION RESULTS
+--------------------------
+The CCTV sliding-window validation ran over 6 unique images (results duplicated in the CSV per detection pass):
+
+  Image      People detected    Classified    Violations
+  0.JPG            2                2             2
+  1.JPG            3                3             2
+  2.jpg            2                2             0
+  3.jpg            1                1             0
+  4.jpg          205              156            75
+  10.jpg           1                1             0
+
+Key observations:
+- 4.jpg (dense crowd scene) had 205 detections, 156 classified, and 75 PPE violations — the most demanding test case.
+- Smaller scenes (1–3 people) achieved 100% classification rate.
+- Across all images, violation detection is active and flagging non-compliant individuals.
+
+---
+
+OUTPUT FILES
+-------------
+  results/reports/ppe_evaluation_report.html  — main self-contained report (open in any browser)
+  results/reports/roc_multiclass.png          — one-vs-rest ROC grid for all multi-class models
+  results/reports/roc_binary.png              — binary ROC curves
+  results/reports/pr_curves.png              — precision-recall curves per class/model
+
+Open the HTML report in a browser to view all interactive plots and the full CCTV validation section.

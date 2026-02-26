@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "skill_name": "ppe-report-generator",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-02-26T05:47:13Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 64.5,
+        "tokens": 15313,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": true,
+          "evidence": "File exists, 7.8 MB"
+        },
+        {
+          "text": "roc_multiclass.png exists in results/reports/",
+          "passed": true,
+          "evidence": "File exists, 207 KB"
+        },
+        {
+          "text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN",
+          "passed": true,
+          "evidence": "Table in response lists all 6 with individual AUC scores"
+        },
+        {
+          "text": "Response includes specific AUC scores (numbers like 0.9xx)",
+          "passed": true,
+          "evidence": "CNN 0.9776, Ensemble 0.9497, GBM 0.9432, SVM 0.9427, ET 0.9238, RF 0.9230"
+        },
+        {
+          "text": "Response tells user where the HTML report is saved",
+          "passed": true,
+          "evidence": "Explicitly states results/reports/ppe_evaluation_report.html"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 87.4,
+        "tokens": 18002,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": true,
+          "evidence": "Report generated and path stated in response"
+        },
+        {
+          "text": "Response identifies CNN as the best model by AUC",
+          "passed": true,
+          "evidence": "CNN PPENetFast listed as BEST with AUC 0.978"
+        },
+        {
+          "text": "Response provides actual AUC numbers for at least 3 models",
+          "passed": true,
+          "evidence": "All 6 multi-class AUC values given plus 3 binary AUC values"
+        },
+        {
+          "text": "Response points user to the HTML report file",
+          "passed": true,
+          "evidence": "Explicitly says 'results/reports/ppe_evaluation_report.html (7.8 MB, fully self-contained)'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 81.4,
+        "tokens": 16754,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": true,
+          "evidence": "Report generated and file confirmed at that path"
+        },
+        {
+          "text": "Response mentions CCTV detection results (people detected, violations, or image names)",
+          "passed": true,
+          "evidence": "Full per-image table: 0.JPG 2 detected 2 violations, 4.jpg 205 detected 75 violations, etc."
+        },
+        {
+          "text": "Response tells user where the report file is",
+          "passed": true,
+          "evidence": "Path results/reports/ppe_evaluation_report.html explicitly stated"
+        },
+        {
+          "text": "Response includes or references model performance summary",
+          "passed": true,
+          "evidence": "Full accuracy+AUC table for all 6 multi-class models included"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 293.8,
+        "tokens": 54108,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": false,
+          "evidence": "Agent wrote PNGs to results/models/, not an HTML report to results/reports/"
+        },
+        {
+          "text": "roc_multiclass.png exists in results/reports/",
+          "passed": false,
+          "evidence": "Generated report_roc_multiclass.png to results/models/ (wrong location, different name)"
+        },
+        {
+          "text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN",
+          "passed": true,
+          "evidence": "All 6 models listed in summary table"
+        },
+        {
+          "text": "Response includes specific AUC scores (numbers like 0.9xx)",
+          "passed": true,
+          "evidence": "AUC values computed and reported (CNN 0.9776, etc.)"
+        },
+        {
+          "text": "Response tells user where the HTML report is saved",
+          "passed": false,
+          "evidence": "No HTML report generated; agent pointed to PNG files instead"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 92.0,
+        "tokens": 36964,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": true,
+          "evidence": "Pre-existing report from skill run still present; agent did not generate it but file exists"
+        },
+        {
+          "text": "Response identifies CNN as the best model by AUC",
+          "passed": false,
+          "evidence": "Agent said 'SVM has highest AUC at 0.891' (binary only); stated multi-class AUC 'not generated in current pipeline' \u00e2\u20ac\u201d missed CNN 0.978"
+        },
+        {
+          "text": "Response provides actual AUC numbers for at least 3 models",
+          "passed": true,
+          "evidence": "3 binary AUC values given (SVM 0.891, RF 0.876, ET 0.875)"
+        },
+        {
+          "text": "Response points user to the HTML report file",
+          "passed": false,
+          "evidence": "No report generated or referenced; agent just read existing CSVs and PNGs"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 175.1,
+        "tokens": 40687,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+          "passed": true,
+          "evidence": "Pre-existing from skill run; agent generated its own PNGs to results/plots/ instead"
+        },
+        {
+          "text": "Response mentions CCTV detection results (people detected, violations, or image names)",
+          "passed": true,
+          "evidence": "Detailed breakdown: 214 total detected, 165 classified, 79 violations, per-image table"
+        },
+        {
+          "text": "Response tells user where the report file is",
+          "passed": true,
+          "evidence": "Pointed to 3 PNG files in results/plots/"
+        },
+        {
+          "text": "Response includes or references model performance summary",
+          "passed": true,
+          "evidence": "Full model accuracy table from prod_model_summary.csv shown"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 77.7667,
+        "stddev": 11.8745,
+        "min": 64.5,
+        "max": 87.4
+      },
+      "tokens": {
+        "mean": 16689.6667,
+        "stddev": 1345.6539,
+        "min": 15313,
+        "max": 18002
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.6333,
+        "stddev": 0.3215,
+        "min": 0.4,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 186.9667,
+        "stddev": 101.422,
+        "min": 92.0,
+        "max": 293.8
+      },
+      "tokens": {
+        "mean": 43919.6667,
+        "stddev": 9017.582,
+        "min": 36964,
+        "max": 54108
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.37",
+      "time_seconds": "-109.2",
+      "tokens": "-27230"
+    }
+  },
+  "notes": []
+}

@@ -1,0 +1,11 @@
+{
+  "eval_id": 3,
+  "eval_name": "cctv-report",
+  "prompt": "Can you make a report showing the CCTV validation results and model performance summary?",
+  "assertions": [
+    {"id": "html_exists",         "description": "HTML report file exists at results/reports/ppe_evaluation_report.html"},
+    {"id": "cctv_mentioned",      "description": "Response mentions CCTV detection results (people detected, violations, or image names)"},
+    {"id": "report_path_given",   "description": "Response tells user where the report file is"},
+    {"id": "model_summary_shown", "description": "Response includes or references model performance summary (accuracy or F1 scores)"}
+  ]
+}

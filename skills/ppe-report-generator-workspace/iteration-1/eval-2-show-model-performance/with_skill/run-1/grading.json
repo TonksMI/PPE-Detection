@@ -1,0 +1,32 @@
+{
+  "eval_id": 2,
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": true,
+      "evidence": "Report generated and path stated in response"
+    },
+    {
+      "text": "Response identifies CNN as the best model by AUC",
+      "passed": true,
+      "evidence": "CNN PPENetFast listed as BEST with AUC 0.978"
+    },
+    {
+      "text": "Response provides actual AUC numbers for at least 3 models",
+      "passed": true,
+      "evidence": "All 6 multi-class AUC values given plus 3 binary AUC values"
+    },
+    {
+      "text": "Response points user to the HTML report file",
+      "passed": true,
+      "evidence": "Explicitly says 'results/reports/ppe_evaluation_report.html (7.8 MB, fully self-contained)'"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

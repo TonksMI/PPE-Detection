@@ -1,0 +1,23 @@
+{
+  "skill_name": "ppe-report-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Generate the full PPE pipeline evaluation report with ROC and AUC curves for all models",
+      "expected_output": "A self-contained HTML report at results/reports/ppe_evaluation_report.html containing ROC/AUC curves for every model (SVM, RF, ExtraTrees, GBM, Ensemble, CNN), a per-class AUC heatmap, precision-recall curves, confusion matrices, and a model comparison summary.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Show me how the models are doing — I want to see validation results and which model has the best AUC",
+      "expected_output": "The report generator script is run, producing the HTML report. The assistant summarises the macro AUC scores per model (CNN ~0.978 being best) and points to the report file.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you make a report showing the CCTV validation results and model performance summary?",
+      "expected_output": "HTML report is generated, including the CCTV detection table (people/classified/violations per image) and the prod_cctv_validation.png embedded in the report.",
+      "files": []
+    }
+  ]
+}

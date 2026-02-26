@@ -1,0 +1,32 @@
+{
+  "eval_id": 2,
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": true,
+      "evidence": "Pre-existing report from skill run still present; agent did not generate it but file exists"
+    },
+    {
+      "text": "Response identifies CNN as the best model by AUC",
+      "passed": false,
+      "evidence": "Agent said 'SVM has highest AUC at 0.891' (binary only); stated multi-class AUC 'not generated in current pipeline' \u00e2\u20ac\u201d missed CNN 0.978"
+    },
+    {
+      "text": "Response provides actual AUC numbers for at least 3 models",
+      "passed": true,
+      "evidence": "3 binary AUC values given (SVM 0.891, RF 0.876, ET 0.875)"
+    },
+    {
+      "text": "Response points user to the HTML report file",
+      "passed": false,
+      "evidence": "No report generated or referenced; agent just read existing CSVs and PNGs"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 2,
+    "failed": 2,
+    "total": 4
+  }
+}

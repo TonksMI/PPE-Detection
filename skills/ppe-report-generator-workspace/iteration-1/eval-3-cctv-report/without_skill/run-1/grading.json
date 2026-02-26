@@ -1,0 +1,32 @@
+{
+  "eval_id": 3,
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": true,
+      "evidence": "Pre-existing from skill run; agent generated its own PNGs to results/plots/ instead"
+    },
+    {
+      "text": "Response mentions CCTV detection results (people detected, violations, or image names)",
+      "passed": true,
+      "evidence": "Detailed breakdown: 214 total detected, 165 classified, 79 violations, per-image table"
+    },
+    {
+      "text": "Response tells user where the report file is",
+      "passed": true,
+      "evidence": "Pointed to 3 PNG files in results/plots/"
+    },
+    {
+      "text": "Response includes or references model performance summary",
+      "passed": true,
+      "evidence": "Full model accuracy table from prod_model_summary.csv shown"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

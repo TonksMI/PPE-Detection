@@ -1,0 +1,32 @@
+{
+  "eval_id": 3,
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": true,
+      "evidence": "Report generated and file confirmed at that path"
+    },
+    {
+      "text": "Response mentions CCTV detection results (people detected, violations, or image names)",
+      "passed": true,
+      "evidence": "Full per-image table: 0.JPG 2 detected 2 violations, 4.jpg 205 detected 75 violations, etc."
+    },
+    {
+      "text": "Response tells user where the report file is",
+      "passed": true,
+      "evidence": "Path results/reports/ppe_evaluation_report.html explicitly stated"
+    },
+    {
+      "text": "Response includes or references model performance summary",
+      "passed": true,
+      "evidence": "Full accuracy+AUC table for all 6 multi-class models included"
+    }
+  ],
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

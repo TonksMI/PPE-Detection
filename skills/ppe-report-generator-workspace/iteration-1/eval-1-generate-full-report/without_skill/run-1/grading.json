@@ -1,0 +1,37 @@
+{
+  "eval_id": 1,
+  "configuration": "without_skill",
+  "expectations": [
+    {
+      "text": "HTML report file exists at results/reports/ppe_evaluation_report.html",
+      "passed": false,
+      "evidence": "Agent wrote PNGs to results/models/, not an HTML report to results/reports/"
+    },
+    {
+      "text": "roc_multiclass.png exists in results/reports/",
+      "passed": false,
+      "evidence": "Generated report_roc_multiclass.png to results/models/ (wrong location, different name)"
+    },
+    {
+      "text": "Response mentions all 6 models: SVM, RF, ExtraTrees, GBM, Ensemble, CNN",
+      "passed": true,
+      "evidence": "All 6 models listed in summary table"
+    },
+    {
+      "text": "Response includes specific AUC scores (numbers like 0.9xx)",
+      "passed": true,
+      "evidence": "AUC values computed and reported (CNN 0.9776, etc.)"
+    },
+    {
+      "text": "Response tells user where the HTML report is saved",
+      "passed": false,
+      "evidence": "No HTML report generated; agent pointed to PNG files instead"
+    }
+  ],
+  "summary": {
+    "pass_rate": 0.4,
+    "passed": 2,
+    "failed": 3,
+    "total": 5
+  }
+}

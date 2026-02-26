@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "eval_name": "show-model-performance",
+  "prompt": "Show me how the models are doing — I want to see validation results and which model has the best AUC",
+  "assertions": [
+    {"id": "html_exists",        "description": "HTML report file exists at results/reports/ppe_evaluation_report.html"},
+    {"id": "best_model_named",   "description": "Response identifies CNN as the best model by AUC"},
+    {"id": "auc_scores_given",   "description": "Response provides actual AUC numbers for at least 3 models"},
+    {"id": "report_path_given",  "description": "Response points user to the HTML report file"}
+  ]
+}
