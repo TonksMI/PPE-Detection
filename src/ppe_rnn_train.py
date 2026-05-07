@@ -164,7 +164,7 @@ def load_ppenet_encoder(model_path, device):
     Load prod_cnn_model.pth, freeze all parameters, set eval mode.
     Returns the frozen PPENet model.
     """
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=True)
     num_classes = len(checkpoint.get('classes', ALL_CLASSES))
     model = PPENet(num_classes)
     model.load_state_dict(checkpoint['state_dict'])
@@ -200,7 +200,6 @@ class AugSequenceDataset(Dataset):
             ])
         else:
             self.transform = T.Compose([
-                T.RandomHorizontalFlip(),
                 T.ToTensor(),
                 T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ])
@@ -437,9 +436,9 @@ gru_head = nn.Sequential(nn.Dropout(0.3), nn.Linear(128, num_classes))
 gru_model = PPERNNClassifier(encoder, gru_rnn, gru_head).to(DEVICE)
 
 gru_tr_dl = DataLoader(tr_ds, batch_size=gru_config['batch_size'],
-                       shuffle=True,  num_workers=num_workers, pin_memory=torch.cuda.is_available())
+                       shuffle=True,  num_workers=num_workers, pin_memory=(DEVICE.type == 'cuda'))
 gru_va_dl = DataLoader(va_ds, batch_size=gru_config['batch_size'],
-                       shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+                       shuffle=False, num_workers=num_workers, pin_memory=(DEVICE.type == 'cuda'))
 
 gru_history, gru_best_state, gru_stopped, gru_best_acc, gru_time = train_rnn(
     gru_model, gru_tr_dl, gru_va_dl, gru_config, "FastGRU"
@@ -460,9 +459,9 @@ lstm_head = nn.Sequential(nn.Dropout(0.4), nn.Linear(256, num_classes))
 lstm_model = PPERNNClassifier(encoder, lstm_rnn, lstm_head).to(DEVICE)
 
 lstm_tr_dl = DataLoader(tr_ds, batch_size=lstm_config['batch_size'],
-                        shuffle=True,  num_workers=num_workers, pin_memory=torch.cuda.is_available())
+                        shuffle=True,  num_workers=num_workers, pin_memory=(DEVICE.type == 'cuda'))
 lstm_va_dl = DataLoader(va_ds, batch_size=lstm_config['batch_size'],
-                        shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+                        shuffle=False, num_workers=num_workers, pin_memory=(DEVICE.type == 'cuda'))
 
 lstm_history, lstm_best_state, lstm_stopped, lstm_best_acc, lstm_time = train_rnn(
     lstm_model, lstm_tr_dl, lstm_va_dl, lstm_config, "NormalLSTM"
