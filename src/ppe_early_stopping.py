@@ -21,7 +21,6 @@ Usage:
 """
 
 import os
-import sys
 import glob
 import random
 import time
@@ -31,7 +30,6 @@ import xml.etree.ElementTree as ET
 import matplotlib
 matplotlib.use('Agg')   # MUST be before any other matplotlib/pyplot import
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 
 import numpy as np
 import pandas as pd
@@ -54,6 +52,8 @@ warnings.filterwarnings('ignore')
 random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(42)
 
 # ── Device ─────────────────────────────────────────────────────
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -81,7 +81,7 @@ os.makedirs(OUT_DIR,   exist_ok=True)
 
 # ── Dataset / training hyperparameters ─────────────────────────
 MAX_CLASS = 600          # crops per class ceiling (matches production cache)
-BATCH     = 128          # batch size
+BATCH     = 256          # batch size
 MAX_EPOCHS = 100         # upper bound — early stopping may terminate sooner
 PATIENCE  = 10           # early stopping patience
 
@@ -303,7 +303,7 @@ class EarlyStopping:
     """
     def __init__(self, patience: int = 10):
         self.patience   = patience
-        self.best_acc   = 0.0
+        self.best_acc   = -1.0
         self.counter    = 0
         self.best_state = None
         self.stopped    = False
