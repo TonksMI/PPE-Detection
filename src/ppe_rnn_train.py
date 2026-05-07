@@ -164,7 +164,7 @@ def load_ppenet_encoder(model_path, device):
     Load prod_cnn_model.pth, freeze all parameters, set eval mode.
     Returns the frozen PPENet model.
     """
-    checkpoint = torch.load(model_path, map_location=device, weights_only=True)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
     num_classes = len(checkpoint.get('classes', ALL_CLASSES))
     model = PPENet(num_classes)
     model.load_state_dict(checkpoint['state_dict'])
@@ -625,7 +625,7 @@ print(f"  Saved: {confusion_path}")
 results_df = pd.DataFrame([
     {
         'Model':          'FastGRU',
-        'Task':           'multi-class (5)',
+        'Task':           'multi',
         'Accuracy':       round(gru_rpt['accuracy'],                   4),
         'Macro_F1':       round(gru_rpt['macro avg']['f1-score'],      4),
         'Weighted_F1':    round(gru_rpt['weighted avg']['f1-score'],   4),
@@ -635,7 +635,7 @@ results_df = pd.DataFrame([
     },
     {
         'Model':          'NormalLSTM',
-        'Task':           'multi-class (5)',
+        'Task':           'multi',
         'Accuracy':       round(lstm_rpt['accuracy'],                  4),
         'Macro_F1':       round(lstm_rpt['macro avg']['f1-score'],     4),
         'Weighted_F1':    round(lstm_rpt['weighted avg']['f1-score'],  4),

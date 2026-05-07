@@ -548,7 +548,7 @@ print(f"  Saved: {confusion_plot}")
 # ── 6d. Results CSV ────────────────────────────────────────────
 results_df = pd.DataFrame([{
     'Model':           'PPENet-ES',
-    'Task':            'multi-class (5)',
+    'Task':            'multi',
     'Accuracy':        round(accuracy,    4),
     'Macro_F1':        round(macro_f1,    4),
     'Weighted_F1':     round(weighted_f1, 4),
