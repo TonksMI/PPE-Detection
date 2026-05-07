@@ -258,9 +258,13 @@ def main():
         try:
             results = sam_model(img_path, bboxes=boxes)
 
+            # Guard against None masks
+            if results[0].masks is None:
+                raise ValueError(f"SAM2 returned no masks for {img_path}")
+
             # results[0].masks.data → (N, H, W) bool tensor (CPU)
-            masks_tensor = results[0].masks.data  # shape (N, H, W)
-            n_masks = masks_tensor.shape[0]
+            masks_tensor = results[0].masks.data.cpu().numpy().astype(bool)
+            n_masks = min(masks_tensor.shape[0], len(anns))
 
             # Initialise as 255 (background / ignore index)
             composite = np.full((img_h, img_w), 255, dtype=np.uint8)
@@ -268,7 +272,7 @@ def main():
             # Composite masks in annotation order; later boxes override earlier ones
             for i in range(n_masks):
                 cls_idx = anns[i]["cls_idx"]
-                m = masks_tensor[i].cpu().numpy().astype(bool)
+                m = masks_tensor[i].astype(bool)
 
                 # SAM may return masks at model resolution; resize if necessary
                 if m.shape != (img_h, img_w):
@@ -307,7 +311,6 @@ def main():
         return
 
     sample_rows = random.sample(index_rows, min(12, len(index_rows)))
-    n_cols = 4          # image | mask | image | mask …  (2 pairs per "column-pair")
     n_pairs = len(sample_rows)
     grid_cols = min(n_pairs, 6) * 2   # up to 6 pairs → 12 sub-images wide
     grid_rows = (n_pairs + 5) // 6    # ceiling(n_pairs / 6) rows of pairs
