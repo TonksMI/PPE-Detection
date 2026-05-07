@@ -437,9 +437,9 @@ gru_head = nn.Sequential(nn.Dropout(0.3), nn.Linear(128, num_classes))
 gru_model = PPERNNClassifier(encoder, gru_rnn, gru_head).to(DEVICE)
 
 gru_tr_dl = DataLoader(tr_ds, batch_size=gru_config['batch_size'],
-                       shuffle=True,  num_workers=num_workers)
+                       shuffle=True,  num_workers=num_workers, pin_memory=torch.cuda.is_available())
 gru_va_dl = DataLoader(va_ds, batch_size=gru_config['batch_size'],
-                       shuffle=False, num_workers=num_workers)
+                       shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 gru_history, gru_best_state, gru_stopped, gru_best_acc, gru_time = train_rnn(
     gru_model, gru_tr_dl, gru_va_dl, gru_config, "FastGRU"
@@ -460,9 +460,9 @@ lstm_head = nn.Sequential(nn.Dropout(0.4), nn.Linear(256, num_classes))
 lstm_model = PPERNNClassifier(encoder, lstm_rnn, lstm_head).to(DEVICE)
 
 lstm_tr_dl = DataLoader(tr_ds, batch_size=lstm_config['batch_size'],
-                        shuffle=True,  num_workers=num_workers)
+                        shuffle=True,  num_workers=num_workers, pin_memory=torch.cuda.is_available())
 lstm_va_dl = DataLoader(va_ds, batch_size=lstm_config['batch_size'],
-                        shuffle=False, num_workers=num_workers)
+                        shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 lstm_history, lstm_best_state, lstm_stopped, lstm_best_acc, lstm_time = train_rnn(
     lstm_model, lstm_tr_dl, lstm_va_dl, lstm_config, "NormalLSTM"
