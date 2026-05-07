@@ -86,13 +86,13 @@ def _infer_arch(model_name: str) -> str:
         return 'HistGBM'
     if 'ensemble' in mn:
         return 'Ensemble'
-    if 'gru' in mn:
+    if 'gru' in mn or 'fastgru' in mn:
         return 'GRU'
-    if 'lstm' in mn:
+    if 'lstm' in mn or 'normallstm' in mn:
         return 'LSTM'
     if 'unet' in mn or 'u-net' in mn:
         return 'UNet'
-    if 'cnn' in mn or 'ppenet' in mn or 'fastgru' in mn:
+    if 'cnn' in mn or 'ppenet' in mn:
         return 'CNN'
     return 'CNN'
 
@@ -297,7 +297,7 @@ def plot_accuracy_comparison(df: pd.DataFrame, out_path: str) -> None:
 # ---------------------------------------------------------------------------
 def plot_f1_heatmap(df: pd.DataFrame, out_path: str) -> None:
     """Per-class F1 heatmap using report_full_summary.csv data."""
-    report_path = os.path.join(OUT_DIR, "report_full_summary.csv")
+    report_path = os.path.join(os.path.dirname(out_path), "report_full_summary.csv")
     try:
         rep = pd.read_csv(report_path)
     except Exception as exc:
