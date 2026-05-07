@@ -310,20 +310,25 @@ def compute_miou(pred_masks: torch.Tensor,
     pred = pred_masks.view(-1)
     true = true_masks.view(-1)
 
+    # Mask out ignore-index pixels from both pred and true
+    valid = (true != ignore_index)
+    pred_valid = pred[valid]
+    true_valid = true[valid]
+
     per_class_iou = []
     for c in range(num_classes):
-        pred_c = (pred == c)
-        true_c = (true == c) & (true != ignore_index)
-        intersection = (pred_c & true_c).sum()
-        union        = (pred_c | true_c).sum()
+        pred_c = (pred_valid == c)
+        true_c = (true_valid == c)
+        intersection = (pred_c & true_c).sum().float()
+        union = (pred_c | true_c).sum().float()
         if union.item() == 0:
             per_class_iou.append(float('nan'))
         else:
-            iou = intersection.float() / union.float()
+            iou = intersection / union
             per_class_iou.append(iou.item())
 
     valid_ious = [v for v in per_class_iou if not np.isnan(v)]
-    mean_iou   = float(np.mean(valid_ious)) if valid_ious else 0.0
+    mean_iou = float(np.mean(valid_ious)) if valid_ious else 0.0
     return mean_iou, per_class_iou
 
 
