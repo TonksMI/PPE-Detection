@@ -1,0 +1,3 @@
+Model,Task,Accuracy,Macro_F1,Weighted_F1,Architecture,Stopped_Epoch,Train_Time(s)
+FastGRU,multi,0.8664,0.8508,0.8669,"GRU(128→128, 1 layer)",28,731.8
+NormalLSTM,multi,0.8636,0.8473,0.8634,"LSTM(128→256, 2 layers)",26,670.2

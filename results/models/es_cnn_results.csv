@@ -1,0 +1,2 @@
+Model,Task,Accuracy,Macro_F1,Weighted_F1,Stopped_Epoch,Train_Time(s)
+PPENet-ES,multi,0.8678,0.848,0.8672,81,40.7
