@@ -1,0 +1,2 @@
+Model,Task,mIoU,Pixel_Acc,Per_Class_IoU_JSON,Train_Time(s)
+UNet,segmentation-5class,0.562125,0.747386,"{""full_ppe"": 0.340682, ""helmet"": 0.484361, ""no_ppe"": 0.616759, ""partial_ppe"": 0.581263, ""safety_vest"": 0.787562}",6191.9

@@ -289,7 +289,7 @@ def plot_accuracy_comparison(df: pd.DataFrame, out_path: str) -> None:
     plt.tight_layout()
     plt.savefig(out_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  Saved accuracy chart → {out_path}")
+    print(f"  Saved accuracy chart -> {out_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +353,7 @@ def plot_f1_heatmap(df: pd.DataFrame, out_path: str) -> None:
     plt.tight_layout()
     plt.savefig(out_path, dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  Saved F1 heatmap → {out_path}")
+    print(f"  Saved F1 heatmap -> {out_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -415,7 +415,7 @@ def make_latex_table(df: pd.DataFrame, out_path: str) -> None:
 
     with open(out_path, 'w', encoding='utf-8') as fh:
         fh.write('\n'.join(lines) + '\n')
-    print(f"  Saved LaTeX table → {out_path}")
+    print(f"  Saved LaTeX table -> {out_path}")
 
 
 # ---------------------------------------------------------------------------
