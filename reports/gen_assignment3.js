@@ -106,12 +106,22 @@ function dataCell(text, widthDxa, shade = false) {
 }
 
 // ── Results table ──────────────────────────────────────────────────────────
+// NOTE: fill DEEPLAB_MIOU, DEEPLAB_PIXACC, YOLO_BOX, YOLO_MASK after training
+const DEEPLAB_MIOU   = "see Table 2";
+const DEEPLAB_PIXACC = "see Table 2";
+const YOLO_BOX       = "see Table 3";
+const YOLO_MASK      = "see Table 3";
+
 function makeResultsTable() {
   const cols = [3000, 2400, 1700, 2260]; // 9360 total
   const rows = [
     ["Model", "Training Paradigm", "Task", "Performance"],
-    ["DeepLabV3+ ResNet50", "Pretrained COCO+ImageNet, all layers fine-tuned", "Semantic Segmentation (6-class)", "mIoU = 48.31%  |  Pixel Acc = 86.18%"],
-    ["YOLOv8n-seg", "Pretrained COCO, all layers fine-tuned", "Instance Segmentation (5-class)", "Box mAP50 = 40.0%  |  Mask mAP50 = 14.1%"],
+    ["DeepLabV3+ ResNet50", "Pretrained COCO+ImageNet, all layers fine-tuned",
+     "Semantic Segmentation (11-class)",
+     `mIoU = ${DEEPLAB_MIOU}  |  Pixel Acc = ${DEEPLAB_PIXACC}`],
+    ["YOLOv8n-seg", "Pretrained COCO, all layers fine-tuned",
+     "Instance Segmentation (10-class)",
+     `Box mAP50 = ${YOLO_BOX}  |  Mask mAP50 = ${YOLO_MASK}`],
   ];
 
   return new Table({
@@ -127,18 +137,24 @@ function makeResultsTable() {
   });
 }
 
-// ── Per-class IoU table ────────────────────────────────────────────────────
+// ── Per-class IoU table (DeepLabV3+) ──────────────────────────────────────
+// Fill IoU values after training completes
 function makeIouTable() {
-  const cols = [3120, 2080, 4160]; // 9360 total
+  const cols = [2600, 1760, 5000]; // 9360 total
   const data = [
-    ["Class",           "IoU",    "Notes"],
-    ["Background",      "86.12%", "Dominant class — easily learned"],
-    ["full_ppe",        "37.55%", "Multi-item overlap makes boundaries hard"],
-    ["helmet",          "9.72%",  "Small objects, heavy occlusion"],
-    ["no_ppe",          "35.81%", "Confused with partial_ppe at boundaries"],
-    ["partial_ppe",     "40.64%", "Best PPE class — distinctive vest region"],
-    ["safety_vest",     "36.01%", "Similar colors to some backgrounds"],
-    ["Mean IoU",        "40.98%", "Background excluded from PPE-only mean"],
+    ["Class",        "IoU",  "Notes"],
+    ["background",   "—",    "Dominant class — fills most pixels"],
+    ["helmet",       "—",    "Small, round object; consistent shape"],
+    ["no_helmet",    "—",    "Head region without hard hat"],
+    ["glove",        "—",    "Small hand-area object; often occluded"],
+    ["no_glove",     "—",    "Bare hand region"],
+    ["goggles",      "—",    "Face-area object; variable shape"],
+    ["no_goggles",   "—",    "Eye region without eyewear"],
+    ["mask",         "—",    "Lower face region; small area"],
+    ["no_mask",      "—",    "Exposed lower face"],
+    ["shoes",        "—",    "Foot region; often partially visible"],
+    ["no_shoes",     "—",    "Foot area without safety footwear"],
+    ["Mean IoU",     "—",    "Average over all 11 classes including background"],
   ];
   return new Table({
     width: { size: 9360, type: WidthType.DXA },
@@ -154,16 +170,22 @@ function makeIouTable() {
 }
 
 // ── YOLOv8-seg per-class table ─────────────────────────────────────────────
+// Fill values after training completes
 function makeYoloTable() {
-  const cols = [2340, 1872, 1872, 1872, 1404]; // 9360
+  const cols = [2340, 1560, 1560, 1900, 1400, 600]; // 9360
   const data = [
-    ["Class",       "Precision", "Recall", "Box mAP50", "Mask mAP50"],
-    ["full_ppe",    "0.611",     "0.393",  "0.416",     "0.164"],
-    ["helmet",      "0.598",     "0.542",  "0.514",     "0.236"],
-    ["no_ppe",      "0.569",     "0.518",  "0.535",     "0.0749"],
-    ["partial_ppe", "0.471",     "0.476",  "0.404",     "0.171"],
-    ["safety_vest", "0.395",     "0.0949", "0.129",     "0.0564"],
-    ["All",         "0.529",     "0.405",  "0.400",     "0.141"],
+    ["Class",      "Precision", "Recall", "Box mAP50", "Mask mAP50", "n"],
+    ["helmet",     "—", "—", "—", "—", "1523"],
+    ["no_helmet",  "—", "—", "—", "—", "1296"],
+    ["glove",      "—", "—", "—", "—", "4663"],
+    ["no_glove",   "—", "—", "—", "—", "6126"],
+    ["goggles",    "—", "—", "—", "—", "4184"],
+    ["no_goggles", "—", "—", "—", "—", "4092"],
+    ["mask",       "—", "—", "—", "—", "269"],
+    ["no_mask",    "—", "—", "—", "—", "661"],
+    ["shoes",      "—", "—", "—", "—", "755"],
+    ["no_shoes",   "—", "—", "—", "—", "606"],
+    ["All",        "—", "—", "—", "—", "~24175"],
   ];
   return new Table({
     width: { size: 9360, type: WidthType.DXA },
@@ -244,25 +266,60 @@ const doc = new Document({
       // ── 1. Task Identification ────────────────────────────────────────────
       H1("1. Task Identification and Dataset"),
 
-      P("Assignment 2 classified entire person crops into five PPE categories. Assignment 3 goes a level deeper: instead of one label per crop, we assign a label to every pixel. Two tasks:"),
+      P("Assignment 2 classified entire person crops into five compound PPE categories. Assignment 3 goes a level deeper: instead of one label per crop, we assign a label to every pixel. It also switches to a more granular schema — individual PPE item types rather than whole-person compound states. Two tasks:"),
 
-      bullet("Semantic segmentation — label each pixel in a full scene as one of six classes: background, full_ppe, helmet, no_ppe, partial_ppe, or safety_vest. No person detector runs first; the whole frame is processed directly."),
-      bullet("Instance segmentation — find each PPE item as a separate object with its own polygon mask, so helmets on different workers are tracked individually rather than merged into a single region."),
+      bullet("Semantic segmentation — label each pixel in a full scene as one of 11 classes: background plus the 10 keremberke PPE item classes. No person detector runs first; the whole frame is processed directly."),
+      bullet("Instance segmentation — find each PPE item as a separate object with its own polygon mask, so a helmet on one worker and a helmet on another are tracked as two distinct instances."),
 
       P(""),
-      H2("1.1 Dataset"),
+      H2("1.1 Class Definitions"),
 
-      P("We use the same MinhNKB corpus from Assignment 2 (helmet-safety-vest-detection-master, 1613 images, Pascal VOC XML annotations). What is new is the mask layer: binary foreground masks generated by SAM2 using the existing bounding-box annotations as prompts. SAM2 takes a box and returns a pixel-precise segmentation of whatever object is inside it."),
+      P("The keremberke dataset labels individual PPE items and their absence. Each bounding box covers a single item on a single worker — not a whole-person state. The 10 classes are:"),
 
-      P("The data preparation script (ppe_seg_data_prep.py) does the following for each image:"),
-      bullet("Reads the XML to get bounding boxes and class names."),
-      bullet("Loads the SAM2 binary mask for that scene. If no mask file exists, the bounding box rectangle is used instead."),
-      bullet("Paints each SAM2 foreground region onto a blank canvas using the box's class index (0 = background, 1-5 = PPE class), producing a single-channel uint8 PNG mask."),
-      bullet("Traces the same binary masks into contour polygons, simplifies them with Douglas-Peucker (epsilon = 0.005 * arc length), and writes them as normalised YOLO polygon labels."),
-      bullet("Splits 85/15 train/val by image stem, yielding 1368 train and 241 val scenes."),
+      bullet("helmet — a hard hat physically present and worn on the head."),
+      bullet("no_helmet — a head region without a hard hat. The annotated area is the head, not the whole person."),
+      bullet("glove — a safety glove on a hand."),
+      bullet("no_glove — a bare hand where a glove should be worn."),
+      bullet("goggles — protective eyewear worn on the face."),
+      bullet("no_goggles — an eye region without protective eyewear."),
+      bullet("mask — a respiratory or face mask worn over the mouth and nose."),
+      bullet("no_mask — a lower face region without a mask."),
+      bullet("shoes — safety footwear on the foot."),
+      bullet("no_shoes — a foot region without safety footwear."),
+
+      P("What is NOT in this schema: hi-vis safety vests, compound states like 'full PPE' or 'partial PPE', and whole-person classification. Those were Assignment 2 categories from the MinhNKB dataset. This assignment uses a different dataset with different, more specific labels. Safety vests do not appear in keremberke at all."),
+
+      P(""),
+      H2("1.2 Dataset"),
+
+      P("The keremberke/protective-equipment-detection dataset (Roboflow, COCO format) ships as three zip files. All annotations are bounding boxes — segmentation fields are empty, so SAM2 generates pixel masks from the boxes."),
+
+      bullet("train.zip — 6473 images. Contains glove, no_glove, goggles, no_goggles, shoes, no_shoes only. No helmets."),
+      bullet("test.zip — 1935 images. Contains primarily helmet and no_helmet, plus goggles, shoes."),
+      bullet("valid.zip — 3570 images. Mixed across all 10 classes."),
+
+      P("All three zips are used. Images with at least one annotated box are pooled (11,704 total), shuffled with seed 42, capped at 4,000, then split 85/15 train/val:"),
+      bullet("Train: 3,400 images"),
+      bullet("Val: 600 images"),
+
+      P("Annotation counts across the full dataset (all zips before capping):"),
+      bullet("no_glove: 6,126   glove: 4,663   goggles: 4,184   no_goggles: 4,092"),
+      bullet("helmet: 1,523   no_helmet: 1,296   no_shoes: 606   shoes: 755"),
+      bullet("no_mask: 661   mask: 269"),
+
+      P("Gloves and goggles dominate. Mask has the fewest annotations at 269. The class weights in the loss function ([0.2 for background, 2.0 for each PPE class]) treat all 10 PPE classes equally regardless of frequency."),
+
+      P(""),
+      H2("1.3 Mask generation"),
+
+      P("The data preparation script (ppe_seg_keremberke_rebuild.py) does the following for each image:"),
+      bullet("Reads the COCO JSON from the zip file to get bounding boxes and class names."),
+      bullet("Runs SAM2 box-prompted segmentation on each bounding box. If SAM2 returns no mask, the bounding box rectangle is used as a fallback."),
+      bullet("Paints each SAM2 foreground region onto a blank canvas at its class index (0 = background, 1–10 = PPE class), producing a single-channel uint8 PNG mask."),
+      bullet("Traces the same binary masks into contour polygons, simplifies with Douglas-Peucker (epsilon = 0.005 × arc length), writes as normalised YOLO polygon .txt labels."),
       P(""),
 
-      P("Both dataset formats (512x512 PNG mask + JPEG, and YOLO polygon .txt + JPEG) are written to D:/Claude/datasets/ppe_seg/ outside the git repository, consistent with how the project handles large data."),
+      P("Both formats are written to D:/Claude/datasets/ppe_seg_ke/ outside the git repository."),
 
       // ── 2. Why DL ────────────────────────────────────────────────────────
       H1("2. Why Deep Learning is Required for Pixel-Wise Tasks"),
@@ -283,31 +340,32 @@ const doc = new Document({
 
       P("The Assignment 3 pipeline is designed to reuse the maximum amount of infrastructure from Assignment 2. The data loader, augmentation layer, and result-reporting scripts are shared; only the output heads and loss functions differ."),
 
-      H2("3.1 Data preparation (ppe_seg_data_prep.py)"),
-      bullet("Reads Pascal VOC XML to get bounding boxes and class labels."),
-      bullet("Loads the per-scene SAM2 binary mask. Falls back to the bounding box rectangle where no mask file exists."),
-      bullet("Paints each SAM2 region onto a blank canvas at its class index — one uint8 PNG per image."),
-      bullet("Contour-traces the same binary masks, simplifies with Douglas-Peucker (epsilon = 0.005 * arc length), writes as YOLO polygon .txt files."),
-      bullet("Deterministic 85/15 split: 1368 train, 241 val. The YAML config (ppe_seg_inst.yaml) is written automatically."),
+      H2("3.1 Data preparation (ppe_seg_keremberke_rebuild.py)"),
+      bullet("Reads all three keremberke zip files (train.zip, test.zip, valid.zip) directly from disk without extracting them."),
+      bullet("Pools all images with at least one annotated box (11,704 total), shuffles with seed 42, caps at 4,000, splits 85/15."),
+      bullet("For each image, runs SAM2 box-prompted segmentation on every bounding box to generate a pixel mask. Falls back to the bounding box rectangle if SAM2 returns nothing."),
+      bullet("Writes semantic masks (uint8 PNG, class index = pixel value) and YOLO polygon labels (.txt, normalised 0-1 coordinates)."),
+      bullet("Auto-generates ppe_seg_ke.yaml for YOLO training. Final dataset: 3,400 train / 600 val."),
 
       H2("3.2 Semantic segmentation — DeepLabV3+ (ppe_deeplab_train.py)"),
       bullet("Backbone: torchvision deeplabv3_resnet50, pretrained on COCO + ImageNet."),
-      bullet("Head: model.classifier[-1] and model.aux_classifier[-1] replaced with nn.Conv2d(256, 6, 1)."),
-      bullet("Input: 512x512, bilinear for images, NEAREST for masks. Random horizontal flip (p=0.5). ImageNet normalisation."),
-      bullet("Loss: CrossEntropyLoss(weight=[0.2, 2.0, 2.0, 2.0, 2.0, 2.0]) + 0.4 * aux loss."),
+      bullet("Head: model.classifier[-1] and model.aux_classifier[-1] replaced with nn.Conv2d(256, 11, 1) for 11 classes (background + 10 PPE items)."),
+      bullet("Input: 512x512, bilinear resize for images, NEAREST for masks. Random horizontal flip (p=0.5), random brightness/contrast jitter (p=0.3 each). ImageNet normalisation."),
+      bullet("Loss: CrossEntropyLoss(weight=[0.2, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]) + 0.4 × aux loss."),
       bullet("Optimiser: AdamW lr=3e-4, weight_decay=1e-4, CosineAnnealingLR, 30 epochs, batch 8."),
-      bullet("Metrics: per-class IoU, mean IoU, pixel accuracy."),
+      bullet("Metrics: per-class IoU (11 classes), mean IoU, pixel accuracy."),
 
-      H2("3.3 Instance segmentation — YOLOv8n-seg"),
-      bullet("COCO-pretrained YOLOv8n-seg fine-tuned via Ultralytics CLI."),
-      bullet("Command: yolo train model=yolov8n-seg.pt data=ppe_seg_inst.yaml epochs=30 imgsz=640 batch=16 device=0"),
-      bullet("Single forward pass outputs boxes, class scores, and polygon masks. No separate crop stage."),
+      H2("3.3 Instance segmentation — YOLOv8n-seg (ppe_yolo_seg_train.py)"),
+      bullet("COCO-pretrained YOLOv8n-seg fine-tuned on the keremberke instance dataset."),
+      bullet("10 output classes matching the keremberke schema (YOLO 0-indexed, no background class)."),
+      bullet("Training: epochs=30, imgsz=640, batch=16, device=0."),
+      bullet("Single forward pass outputs boxes, class scores, and polygon masks per instance."),
       bullet("Metrics: box mAP50/50-95, mask mAP50/50-95, precision, recall per class."),
 
       H2("3.4 What was reused from Assignment 2"),
       P("The comparison and reporting infrastructure carries over with minor extensions:"),
-      bullet("ppe_experiment_comparison.py — two new CSV loaders added; the chart now covers 19 models across four task types."),
-      bullet("generate_assignment_report.py — two table rows and a pixel-wise section added; nothing else touched."),
+      bullet("ppe_experiment_comparison.py — updated CSV loaders for the new keremberke results."),
+      bullet("generate_assignment_report.py — table rows and pixel-wise section updated for the new schema."),
       bullet("results/models/ naming convention, git worktree workflow, and .gitignore rules for large checkpoints all unchanged."),
 
       // ── 4. Transfer Learning ─────────────────────────────────────────────
@@ -316,13 +374,13 @@ const doc = new Document({
       P("Both models start from pretrained weights. This section covers what was initialised, what was replaced, and what the difference actually made."),
 
       H3("4.1 DeepLabV3+ — pretrained encoder, new head"),
-      P("The ResNet50 backbone loads a 161 MB checkpoint trained on ImageNet and COCO PASCAL VOC. The last 1x1 convolution in the ASPP classifier and in the auxiliary branch are replaced with randomly-initialised Conv2d(256, 6, 1) for our six classes. All backbone layers are left unfrozen and trained at lr=3e-4. The idea is that the backbone has already learned how to detect edges, textures, and object parts; we just need to teach it which of those features correspond to helmets and vests."),
+      P("The ResNet50 backbone loads a 161 MB checkpoint trained on ImageNet and COCO PASCAL VOC. The last 1x1 convolution in the ASPP classifier and in the auxiliary branch are replaced with randomly-initialised Conv2d(256, 11, 1) for our 11 classes (background + 10 PPE items). All backbone layers are left unfrozen and trained at lr=3e-4. The backbone already knows edges, textures, and object boundaries — we direct those features towards distinguishing a helmet from a bare head, a glove from a bare hand, and so on."),
 
       H3("4.2 What happens without pretrained weights"),
-      P("Training DeepLabV3+ from random initialisation on the same 1368 images: mIoU stays below 0.15 for all 30 epochs. The pretrained version reaches 0.483. That three-fold difference on a small dataset is about what you would expect. The backbone needs millions of images to learn useful low-level representations from scratch; 1368 is not enough."),
+      P("On a prior run with the smaller MinhNKB-only 1368-image dataset, training DeepLabV3+ from random initialisation kept mIoU below 0.15 for all 30 epochs. The pretrained version reached 0.483 on the same data. The keremberke dataset is larger (3400 training images) but the 10-class task is harder — more classes, smaller objects per class — so pretrained weights are equally essential here."),
 
       H3("4.3 YOLOv8n-seg — COCO backbone fine-tuned"),
-      P("YOLOv8n-seg starts from COCO weights covering 80 detection classes plus instance masks. All layers are fine-tuned. COCO includes people in various contexts, so the backbone arrives with some ability to distinguish human body parts from background. The five PPE classes are then learned on top of that."),
+      P("YOLOv8n-seg starts from COCO weights covering 80 detection classes plus instance masks. All layers are fine-tuned on the 10 keremberke classes. COCO contains people holding objects, wearing hats, and in various poses, so the feature anchors for small items on human bodies are already partially formed. Helmets, gloves, and goggles all appear in COCO-adjacent contexts even if not under the same names."),
 
       // ── 5. Performance Evaluation ─────────────────────────────────────────
       H1("5. Performance Evaluation"),
@@ -330,50 +388,45 @@ const doc = new Document({
       H2("5.1 Overall results"),
       P(""),
       makeResultsTable(),
-      P(""),
+      P("Both models were trained on 3,400 images from the keremberke dataset using the 10 native PPE item classes. Results above are from the 600-image validation set."),
 
       H2("5.2 DeepLabV3+ per-class IoU"),
       P(""),
       makeIouTable(),
       P(""),
 
-      P("Background hits 86.12 percent because it makes up most pixels and is visually consistent. Among PPE classes, partial_ppe is the easiest at 40.64 percent — safety vests produce a wide orange-yellow band that the encoder picks up reliably. Helmet is the hardest at 9.72 percent. In a 512x512 input, a helmet often covers fewer than 30x30 pixels and is frequently occluded by other workers in front of it."),
+      P("Background makes up the majority of pixels in every image and should score the highest IoU. Among PPE item classes, glove and no_glove have the most training annotations (4,663 and 6,126 respectively) and are expected to score well. Helmet and no_helmet have fewer annotations (1,523 and 1,296) but are visually distinctive — hard hats have a consistent shape and colour. Mask and no_mask have the fewest annotations (269 and 661) and are the smallest objects; their IoU is expected to be lowest."),
 
       H2("5.3 YOLOv8n-seg per-class results"),
+      P("The 'n' column shows total annotation counts across the full keremberke dataset before the 4,000-image cap. Higher annotation counts generally correlate with higher mAP, but object size and visual consistency also matter — a helmet is a more geometrically stable shape than a glove or shoe, so it tends to get a better polygon fit even with fewer examples."),
       P(""),
       makeYoloTable(),
       P(""),
 
-      P("Helmet gets the best mask mAP50 at 23.6 percent despite being small. The reason is shape: helmets are round and consistent, so once the box is right, the polygon fits without much variation. Safety vest scores the worst at 5.64 percent. It drapes loosely on the body and its outline changes completely depending on arm position, camera angle, and fit — the model cannot generalize that shape."),
-
       // ── 6. Experimentation ───────────────────────────────────────────────
       H1("6. Experimentation and Analysis"),
 
-      H3("6.1 Convergence"),
-      P("DeepLab training loss dropped from 1.07 at epoch 5 to 0.26 at epoch 30. Validation mIoU climbed from 0.374 to a peak of 0.483 at epoch 28, then slipped back to 0.475 by epoch 30. The late dip is typical of fine-tuning a large model on under 1500 images: once the cosine schedule drives the learning rate very low, the backbone starts fitting training masks rather than generalizing. We save the epoch 28 checkpoint."),
+      H3("6.1 Class frequency vs performance"),
+      P("The 10 keremberke classes are not uniformly represented. Gloves and goggles (positive and negative) each have over 4,000 annotations in the full dataset; mask has only 269. In pixel-level tasks this translates directly: classes with more training examples cover more pixels during training and produce stronger gradients. Helmet and no_helmet sit in the middle at ~1,300-1,500 annotations each — enough to be learnable but not dominant."),
 
-      H3("6.2 Pixel accuracy vs mean IoU"),
-      P("86.18 percent pixel accuracy but 40.98 percent mean IoU. The gap is not a contradiction — it is a class imbalance artifact. Background is about 80 percent of all pixels. Getting background right is enough for high pixel accuracy without touching any PPE class. Mean IoU weights all six classes equally, so a model that ignores a PPE class pays a real penalty. For this task, mIoU is the number that matters. Pixel accuracy is almost useless as a standalone metric here."),
+      H3("6.2 Why individual items are harder to segment than whole-person crops"),
+      P("Assignment 2 drew a bounding box around an entire person. The person filled most of the crop. Here the bounding boxes are around individual items — a glove is roughly 5 percent of the image area, a mask even less. At 512x512 input resolution, a mask box might cover 20x15 pixels. DeepLabV3+'s ASPP module uses atrous rates tuned for medium-to-large objects. Small items at the limit of the input resolution are the hardest case."),
 
-      H3("6.3 Box-mask gap in YOLOv8n-seg"),
-      P("Box mAP50 is 40.0 percent; mask mAP50 is 14.1 percent. The model finds where items are (box IoU > 0.5) at a reasonable rate, but drawing a tight polygon around them is a different problem. Boxes tolerate loose boundaries. Polygon masks do not. For soft items like vests that conform to body shape, the outline changes with every pose, and 1368 training images are not enough for the model to memorize all those variations."),
+      H3("6.3 Pixel accuracy vs mean IoU"),
+      P("Background fills most pixels in each image. A model that predicts background everywhere achieves high pixel accuracy while scoring 0 IoU on every PPE class. Mean IoU weights all 11 classes equally, so ignoring any one class costs roughly 1/11 of the score. For this task, mIoU is the primary metric. Pixel accuracy is included for completeness but carries little diagnostic value on its own."),
 
-      H3("6.4 The pseudo-label problem"),
-      P("Assignment 2 used clean, hand-labeled crop-level categories. Here, every pixel label comes from SAM2 running on a bounding box, not from a human. Two things go wrong: SAM2 sometimes bleeds outside the actual object or misses parts of it, especially when workers overlap. And because the class label comes from the box annotation, a box containing both a helmet and vest gets one label assigned to every pixel inside it. The 87.33 percent classification accuracy from Assignment 2 versus 40.98 percent mIoU here is not an apples-to-apples comparison — the underlying label quality is completely different. Hand-annotated polygon masks would close a large part of that gap."),
+      H3("6.4 Box-mask gap in YOLOv8n-seg"),
+      P("Box mAP50 measures whether the predicted bounding box overlaps the ground truth at IoU > 0.5. Mask mAP50 requires the predicted polygon to also match the object boundary at the same threshold. Boxes are forgiving — a box 10 pixels too wide still scores well. Polygon masks are not. Gloves, shoes, and masks in particular change shape constantly with hand and body position. The expected gap between box and mask mAP is larger for these deformable items than for rigid ones like helmets."),
 
-      H3("6.5 How the four task types compare"),
-      P("The 19-model chart puts numbers to what you would expect intuitively:"),
-      bullet("Whole-image classification, 5 classes: 70-94 percent. ViT-B-16 at 93.90 percent."),
-      bullet("Object detection, 5 classes, 2609 scenes: 86.3 percent mAP50 with YOLOv8n."),
-      bullet("Semantic segmentation, 6 classes, pixel-level: 40.98 percent mIoU with DeepLabV3+."),
-      bullet("Instance segmentation, 5 classes, polygon masks: 14.1 percent mask mAP50 with YOLOv8n-seg."),
-      P("Each step down the list asks for more from the model — more spatial precision, more instances distinguished, more boundary accuracy — and the numbers reflect that."),
+      H3("6.5 The pseudo-label problem"),
+      P("Every pixel label in this dataset comes from SAM2 running on a keremberke bounding box annotation — there are no human-drawn polygon masks anywhere. SAM2 is accurate for clear, isolated objects. It struggles when objects overlap (one glove in front of another) or when the bounding box contains partial occlusion. The class label for every pixel inside a SAM2 mask comes from the box annotation, so if a box is slightly misdrawn, every mislabelled pixel contributes to training noise. This is the primary ceiling on achievable mIoU with this data pipeline."),
 
       H3("6.6 What would actually improve these results"),
-      bullet("The biggest bottleneck is label quality. 500 hand-annotated polygon masks would likely raise mIoU by more than any architecture change."),
-      bullet("The keremberke HuggingFace dataset would add roughly 1500 scenes once it is converted from its legacy loading script to Parquet format. That alone would nearly double the training set."),
-      bullet("Running the two-stage pipeline from Assignment 2 (YOLOv8n person detect, then DeepLabV3+ on the crop) might outperform full-scene segmentation. Person crops eliminate most background pixels and let the segmentation model focus on what is actually being worn."),
-      bullet("CRF post-processing on DeepLab outputs would sharpen boundaries with no retraining, at the cost of added inference time."),
+      bullet("Hand-annotated polygon masks for even 500 images would likely raise mIoU more than any architecture change. SAM2 pseudo-labels are the primary noise source."),
+      bullet("The keremberke dataset has 11,704 images with relevant annotations; this assignment used only 4,000. Training on the full set (requiring ~5 hours of SAM2 processing) would directly help the lower-frequency classes like mask and no_mask."),
+      bullet("Separate models per item type — one DeepLabV3+ for helmet/no_helmet, another for glove/no_glove — would let each model specialise without competing for capacity across very different object scales."),
+      bullet("CRF post-processing on DeepLab outputs would sharpen predicted boundaries at no retraining cost, at the expense of added inference time per image."),
+      bullet("A two-stage pipeline (person detector first, then item-level segmentation on the crop) would reduce background dominance and let the segmentation model focus on the human body region where PPE items actually appear."),
 
       // ── Appendix ─────────────────────────────────────────────────────────
       pageBreak(),
