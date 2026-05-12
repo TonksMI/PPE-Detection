@@ -56,6 +56,7 @@ node_modules/
 # Oversized model weights (>100 MB — GitHub limit)
 results/models/prod_vit_model.pth
 results/models/deeplab_model.pth
+sam2_b.pt
 
 # Training logs (moved to logs/)
 logs/
