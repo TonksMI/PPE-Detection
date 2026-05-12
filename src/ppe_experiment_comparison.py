@@ -47,6 +47,7 @@ PARAM_COUNTS = {
     'GRU':        100,
     'LSTM':       800,
     'UNet':      7700,
+    'ViT':       86000,
     'SVM':          0,
     'RF':           0,
     'ExtraTrees':   0,
@@ -60,6 +61,7 @@ ARCH_COLOURS = {
     'GRU':        '#55A868',
     'LSTM':       '#C44E52',
     'UNet':       '#8172B2',
+    'ViT':        '#E07B54',
     'SVM':        '#CCB974',
     'RF':         '#64B5CD',
     'ExtraTrees': '#DD8452',
@@ -213,6 +215,54 @@ def load_and_harmonise(out_dir: str) -> pd.DataFrame:
         print(f"  Loaded {len(df)} rows from unet_results.csv")
     except Exception as exc:
         print(f"  WARNING: could not load unet_results.csv — {exc}")
+
+    # ------------------------------------------------------------------
+    # 5. prod_vit_results.csv  (ViT-B-16 fine-tuned)
+    # ------------------------------------------------------------------
+    path = os.path.join(out_dir, "prod_vit_results.csv")
+    try:
+        df = pd.read_csv(path)
+        for _, r in df.iterrows():
+            task = str(r.get('Task', 'multi')).strip().lower()
+            rows.append({
+                'Model':        str(r['Model']),
+                'Task':         task,
+                'Accuracy':     float(r['Accuracy']),
+                'mIoU':         np.nan,
+                'Macro_F1':     float(r['Macro_F1'])    if pd.notna(r.get('Macro_F1'))    else np.nan,
+                'Weighted_F1':  float(r['Weighted_F1']) if pd.notna(r.get('Weighted_F1')) else np.nan,
+                'Architecture': 'ViT',
+                'Params_K':     PARAM_COUNTS['ViT'],
+                'Train_Time_s': float(r['Train_Time(s)']) if pd.notna(r.get('Train_Time(s)')) else np.nan,
+                'Notes':        str(r.get('Notes', '')),
+            })
+        print(f"  Loaded {len(df)} rows from prod_vit_results.csv")
+    except Exception as exc:
+        print(f"  WARNING: could not load prod_vit_results.csv -- {exc}")
+
+    # ------------------------------------------------------------------
+    # 6. masked_cnn_results.csv  (SAM2-masked background-removal CNN)
+    # ------------------------------------------------------------------
+    path = os.path.join(out_dir, "masked_cnn_results.csv")
+    try:
+        df = pd.read_csv(path)
+        for _, r in df.iterrows():
+            task = str(r.get('Task', 'multi')).strip().lower()
+            rows.append({
+                'Model':        str(r['Model']),
+                'Task':         task,
+                'Accuracy':     float(r['Accuracy']),
+                'mIoU':         np.nan,
+                'Macro_F1':     float(r['Macro_F1'])    if pd.notna(r.get('Macro_F1'))    else np.nan,
+                'Weighted_F1':  float(r['Weighted_F1']) if pd.notna(r.get('Weighted_F1')) else np.nan,
+                'Architecture': 'CNN',
+                'Params_K':     PARAM_COUNTS['CNN'],
+                'Train_Time_s': float(r['Train_Time(s)']) if pd.notna(r.get('Train_Time(s)')) else np.nan,
+                'Notes':        'SAM2 background removal',
+            })
+        print(f"  Loaded {len(df)} rows from masked_cnn_results.csv")
+    except Exception as exc:
+        print(f"  WARNING: could not load masked_cnn_results.csv -- {exc}")
 
     if not rows:
         return pd.DataFrame()

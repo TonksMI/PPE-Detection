@@ -1,0 +1,2 @@
+Model,Task,Accuracy,Macro_F1,Weighted_F1,Train_Time(s),Architecture,Params_K,Notes
+ViT-B-16 (fine-tuned),multi,0.9390,0.9218,0.9387,,ViT,86000,"ImageNet pretrained, 20ep fine-tune"
