@@ -14,4 +14,5 @@ FastGRU,multi,0.8664,,0.8508,0.8669,GRU,100,731.8,Stopped epoch 28
 NormalLSTM,multi,0.8636,,0.8473,0.8634,LSTM,800,670.2,Stopped epoch 26
 UNet,segmentation,,0.562125,,,UNet,7700,6191.9,Segmentation (mIoU metric)
 ViT-B-16 (fine-tuned),multi,0.939,,0.9218,0.9387,ViT,86000,,"ImageNet pretrained, 20ep fine-tune"
+MaskedCNN (SAM2+ellipse),multi,0.7448,,0.7374,0.7454,CNN,226,9.1,SAM2 background removal
 YOLOv8n (end-to-end PPE),detection,0.863,,,,YOLO,3006,352.8,5-class end-to-end detection

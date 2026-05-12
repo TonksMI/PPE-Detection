@@ -1,0 +1,2 @@
+Model,Task,Accuracy,Macro_F1,Weighted_F1,Train_Time(s)
+MaskedCNN (SAM2+ellipse),multi,0.7448,0.7374,0.7454,9.1
