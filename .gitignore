@@ -56,3 +56,17 @@ node_modules/
 # Oversized model weights (>100 MB — GitHub limit)
 results/models/prod_vit_model.pth
 results/models/deeplab_model.pth
+
+# Training logs (moved to logs/)
+logs/
+
+# Claude Code / Superpowers artefacts
+skills/
+docs/superpowers/
+
+# Keremberke zip downloads (too large for git)
+train.zip
+test.zip
+valid.zip
+valid-mini.zip
+.claude/worktrees/

@@ -1,83 +1,94 @@
-# PPE Detection — Computer Vision Final Project
+# PPE Detection — Computer Vision Pipeline
 
-Automated Personal Protective Equipment (PPE) detection for industrial warehouse environments using a two-stage computer vision pipeline.
-
-## Overview
-
-| Stage | Method | Result |
-|-------|--------|--------|
-| Person Detection | YOLOv8n fine-tuned | mAP50 = 0.679 |
-| PPE Classification | CNN PPENet — 100 epochs, RTX 5070 | **87.33% multi-class** |
-| Binary (PPE / no PPE) | SVM (HOG + colour features) | **84.44%** |
-| Best Multi-class AUC | CNN PPENet (one-vs-rest) | **0.978** |
-
-### Pipeline
-
-```
-CCTV Frame → YOLOv8n Person Detector → Person Crops → CNN PPENet → PPE Classification
-```
-
-**Stage 1 — Person Detection:** YOLOv8n fine-tuned on 1,105 images (jomarkow hard-hat workers with head-to-body box expansion + 300 INRIA pedestrian crops). Pre-trained on COCO (118K images).
-
-**Stage 2 — PPE Classification:** Custom lightweight CNN (207K parameters, 64×64 input) classifying 5 safety classes with 87.33% validation accuracy.
+Automated Personal Protective Equipment detection for industrial environments. The project spans three assignments, each extending the previous one: crop-level classification → object detection → pixel-level segmentation.
 
 ---
 
-## Classes
+## Project Arc
 
-| Class | Description |
-|-------|-------------|
-| `helmet` | Safety hard hat worn correctly |
-| `safety_vest` | High-visibility reflective vest |
-| `full_ppe` | Both helmet and vest present |
-| `partial_ppe` | Some PPE present but incomplete |
-| `no_ppe` | No safety equipment detected |
+| Assignment | Task | Best Result |
+|---|---|---|
+| 1 — Classification | 5-class crop classification (MinhNKB schema) | ViT-B/16: **93.90%** |
+| 2 — Object Detection | End-to-end 5-class detection on full scenes | YOLOv8n: **86.3% mAP50** |
+| 3 — Segmentation | Pixel-wise & instance segmentation (keremberke 10-class) | YOLOv8n-seg: **90.0% box / 87.1% mask mAP50** |
 
 ---
 
-## Datasets
+## Schemas
 
-| Dataset | Images | Format | Use |
-|---------|--------|--------|-----|
-| [MinhNKB Helmet-Safety-Vest](https://github.com/MinhNKB/helmet-safety-vest-detection) | 1,613 | Pascal VOC XML | PPE classification training |
-| [Jomarkow Hard Hat Workers](https://roboflow.com) | 1,000 | YOLO TXT | PPE + person detection training |
-| [INRIA Person Dataset](https://huggingface.co/datasets/marcelarosalesj/inria-person) | 300 crops | HuggingFace | Person detection training |
+Two separate label schemas are used across the project. They come from different datasets and are **not interchangeable**.
 
-**Combined training set:** 3,626 crops (80/20 train/val split)
+### MinhNKB 5-class (Assignments 1 & 2)
+
+Whole-person crop labels — one label per person bounding box.
+
+| Class | Meaning |
+|---|---|
+| `helmet` | Person wearing a hard hat only (no vest) |
+| `safety_vest` | Person wearing a hi-vis vest only (no hard hat) |
+| `full_ppe` | Person wearing both hard hat and hi-vis vest |
+| `partial_ppe` | Person wearing some but not all required PPE |
+| `no_ppe` | Person wearing neither hard hat nor vest |
+
+No safety glasses, gloves, or footwear in this schema.
+
+### Keremberke 10-class (Assignment 3)
+
+Individual item labels — one label per PPE item bounding box, not per person.
+
+| Class | Meaning |
+|---|---|
+| `helmet` / `no_helmet` | Hard hat present / absent on the head |
+| `glove` / `no_glove` | Safety glove present / absent on the hand |
+| `goggles` / `no_goggles` | Protective eyewear present / absent |
+| `mask` / `no_mask` | Face mask present / absent |
+| `shoes` / `no_shoes` | Safety footwear present / absent |
+
+No safety vests, full_ppe, or partial_ppe in this schema.
 
 ---
 
-## Model Results
+## All Model Results
 
-### Multi-class Classification (5 classes)
+### Assignment 1 — Classification (MinhNKB 5-class, 80/20 split)
 
-| Model | Accuracy | Macro F1 | AUC |
-|-------|----------|----------|-----|
-| CNN PPENet (100 epochs, GPU) | **87.33%** | **0.856** | **0.978** |
-| Ensemble (SVM+RF+ET+GBM) | 79.48% | 0.777 | 0.950 |
-| HistGBM (400 rounds, no PCA) | 76.72% | 0.745 | 0.943 |
-| SVM (PCA 220 → RBF, balanced) | 76.31% | 0.745 | 0.943 |
-| Random Forest (400 trees) | 73.00% | 0.708 | 0.923 |
-| ExtraTrees (400 trees) | 71.76% | 0.693 | 0.924 |
+| Model | Val Accuracy | Notes |
+|---|---|---|
+| ViT-B/16 (fine-tuned) | **93.90%** | Best overall |
+| Custom PPENet CNN | 87.33% | 3 conv blocks, 226K params |
+| SAM2-masked CNN | 74.48% | Background removal hurt accuracy |
+| ResNet-18 (transfer, frozen) | ~79.82% | Only final layer trained |
+| ResNet-18 (scratch) | ~79.23% | No pretrained weights |
+| Random Forest (400 trees) | 79.48% | HOG + colour features |
+| SVM (RBF, PCA-220) | 76.31% | Best classical model |
 
-### Per-class CNN F1 Scores (100 epochs)
+### Assignment 2 — Object Detection (MinhNKB 5-class, 2609 scenes)
 
-| Class | Precision | Recall | F1 |
-|-------|-----------|--------|----|
-| safety_vest | 0.93 | 0.93 | **0.93** |
-| no_ppe | 0.87 | 0.94 | **0.90** |
-| helmet | 0.92 | 0.91 | 0.91 |
-| partial_ppe | 0.75 | 0.77 | 0.76 |
-| full_ppe | 0.85 | 0.71 | 0.77 |
+| Model | mAP50 | Notes |
+|---|---|---|
+| YOLOv8n end-to-end | **86.3%** | Single-stage, full scene |
 
-### Person Detection (YOLOv8n fine-tuning)
+### Assignment 3 — Segmentation (keremberke 10-class, 4000 images)
 
-| Epoch | mAP50 | Precision | Recall |
-|-------|-------|-----------|--------|
-| 1 | 0.288 | 0.446 | 0.313 |
-| 2 | 0.443 | 0.506 | 0.489 |
-| 3 | 0.608 | 0.660 | 0.590 |
-| 4 | **0.679** | **0.708** | **0.613** |
+| Model | Task | Box mAP50 | Mask mAP50 | mIoU | Pixel Acc |
+|---|---|---|---|---|---|
+| YOLOv8n-seg | Instance seg (10-class) | **90.0%** | **87.1%** | — | — |
+| DeepLabV3+ ResNet50 | Semantic seg (11-class) | — | — | pending | pending |
+
+#### YOLOv8n-seg per-class (keremberke val set, 600 images)
+
+| Class | Box mAP50 | Mask mAP50 | Ann. count |
+|---|---|---|---|
+| helmet | 99.3% | 99.1% | 1,523 |
+| no_helmet | 91.9% | 88.7% | 1,296 |
+| glove | 87.6% | 86.7% | 4,663 |
+| no_glove | 80.8% | 75.6% | 6,126 |
+| goggles | 87.1% | 79.6% | 4,184 |
+| no_goggles | 81.2% | 76.7% | 4,092 |
+| mask | 96.1% | 91.9% | 269 |
+| no_mask | 82.4% | 78.8% | 661 |
+| shoes | 94.5% | 94.5% | 755 |
+| no_shoes | 99.5% | 99.5% | 606 |
 
 ---
 
@@ -85,29 +96,101 @@ CCTV Frame → YOLOv8n Person Detector → Person Crops → CNN PPENet → PPE C
 
 ```
 PPE-Detection/
-├── src/
-│   ├── ppe_production_train.py    # Full production training script (all models)
-│   ├── ppe_cnn_fast.py            # PPENetFast CNN definition
-│   ├── ppe_ml_models.py           # SVM, RF, ExtraTrees, GBM baselines
-│   ├── ppe_combined_pipeline.py   # YOLO person detect + PPENetFast classify
-│   ├── ppe_cctv_validation.py     # CCTV sliding-window validation
-│   └── ppe_pipeline.py            # Single-image inference pipeline
-├── person_detection/
-│   ├── person_detect.yaml         # YOLOv8 training config
-│   └── prepare_dataset.py         # Head-to-body box expansion script
-├── reports/
-│   ├── create_prod_report.js      # Word document generator (v3)
-│   └── create_report.js           # Word document generator (v1)
-├── skills/
-│   └── ppe-report-generator/      # Claude Code skill: HTML evaluation report
+│
+├── src/                                  # All Python training and inference scripts
+│   │
+│   ├── ── Core Pipeline (Assignment 1 & 2) ──
+│   ├── ppe_production_train.py           # Train CNN + SVM/RF/ET/GBM ensemble
+│   ├── ppe_cnn_fast.py                   # PPENetFast architecture (226K params)
+│   ├── ppe_ml_models.py                  # Classical ML baselines
+│   ├── ppe_combined_pipeline.py          # YOLO person detect → PPENet classify
+│   ├── ppe_pipeline.py                   # Single-image inference helper
+│   ├── ppe_cctv_validation.py            # CCTV sliding-window validation
+│   ├── ppe_early_stopping.py             # EarlyStopping callback utility
+│   │
+│   ├── ── Transfer Learning ──
+│   ├── ppe_vit_train.py                  # ViT-B/16 fine-tuning (93.90%)
+│   ├── ppe_vit_evaluate.py               # ViT evaluation + confusion matrix
+│   ├── ablation_study.py                 # Frozen vs fine-tuned ablation
+│   │
+│   ├── ── Assignment 3 — Segmentation ──
+│   ├── ppe_seg_keremberke_rebuild.py     # Build 10-class dataset from zips (SAM2)
+│   ├── ppe_seg_data_prep.py              # MinhNKB SAM2 data prep (5-class, legacy)
+│   ├── ppe_seg_keremberke_local.py       # Supplement keremberke to MinhNKB (legacy)
+│   ├── ppe_deeplab_train.py              # DeepLabV3+ ResNet50 semantic segmentation
+│   ├── ppe_yolo_seg_train.py             # YOLOv8n-seg instance segmentation
+│   ├── _gen_deeplab_predgrid.py          # Regenerate DeepLab prediction grid plot
+│   │
+│   ├── ── Experiments ──
+│   ├── ppe_masked_cnn_train.py           # SAM2-masked CNN ablation (74.48%)
+│   ├── ppe_mask_generator.py             # SAM2 binary mask generation utility
+│   ├── ppe_rnn_train.py                  # RNN/LSTM/GRU experiments
+│   ├── ppe_unet_train.py                 # UNet segmentation experiment
+│   │
+│   ├── ── Reporting & Visualisation ──
+│   ├── ppe_experiment_comparison.py      # 19-model comparison chart
+│   ├── ppe_full_evaluation_report.py     # ROC curves, confusion matrices, PR curves
+│   ├── ppe_final_report.py               # Summary report generator
+│   ├── ppe_cctv_report.py                # CCTV validation report
+│   ├── replot_individual_heatmaps.py     # Re-render individual heatmap plots
+│   │
+│   └── ── Legacy Iterations ──
+│       ├── ppe_cnn.py                    # Original CNN (superseded by ppe_cnn_fast.py)
+│       ├── ppe_v2_cnn_only.py            # v2 CNN-only iteration
+│       ├── ppe_ml_continue.py            # Ad-hoc continued ML training
+│       └── setup_yolo_ppe.py             # Old YOLO dataset setup
+│
+├── person_detection/                     # Person detector fine-tuning
+│   ├── person_detect.yaml                # YOLOv8 training config
+│   ├── prepare_dataset.py                # Head-to-body bounding box expansion
+│   └── train_yolo_end2end.py             # End-to-end YOLOv8 PPE training
+│
+├── reports/                              # Document generators
+│   ├── generate_assignment_report.py     # Final Project Writeup (Python/python-docx)
+│   ├── gen_assignment3.js                # Assignment 3 Writeup (Node.js/docx)
+│   ├── create_prod_report.js             # Production report (Node.js, v3)
+│   ├── create_report.js                  # Original report (Node.js, v1)
+│   └── package.json                      # Node.js dependencies (docx)
+│
 ├── results/
-│   ├── plots/                     # Evaluation visualisations
-│   ├── models/                    # Saved weights (.pth, .pkl) and plots
-│   └── reports/                   # HTML evaluation report + ROC curves
-├── setup_datasets.py              # Dataset download and preparation
-└── docs/
-    └── PPE_Detection_Report_v3.docx
+│   ├── models/                           # Saved weights + per-model result plots
+│   │   ├── prod_cnn_model.pth            # PPENetFast best weights
+│   │   ├── yolo_e2e_best.pt              # YOLOv8n end-to-end best weights
+│   │   ├── yolo_seg_best.pt              # YOLOv8n-seg best weights
+│   │   ├── person_detector_yolov8n.pt    # Fine-tuned person detector
+│   │   ├── *_results.csv                 # Per-model result CSVs
+│   │   └── *.png                         # Confusion matrices, training curves
+│   ├── plots/                            # EDA and training visualisations
+│   ├── reports/                          # HTML evaluation report
+│   └── summaries/                        # Aggregate CSVs and ablation results
+│
+├── docs/                                 # Generated write-up documents
+│   ├── Final_Project_Writeup.docx        # Full project report (python-docx)
+│   ├── Assignment3_Writeup.docx          # Assignment 3 segmentation report
+│   ├── PPE_Detection_Report_v3.docx      # Earlier production report
+│   └── PPE_Detection_Report_v2.docx      # Earlier draft
+│
+├── cctv_validation_original/             # CCTV test images for pipeline validation
+├── logs/                                 # Training log files (gitignored)
+├── runs/                                 # YOLO training artefacts (gitignored)
+├── sam2_b.pt                             # SAM2-B checkpoint (used by seg scripts)
+├── yolov8n.pt                            # YOLOv8n base weights
+├── setup_datasets.py                     # Dataset download and preparation
+└── CLAUDE.md                             # Claude Code project instructions
 ```
+
+---
+
+## Datasets
+
+| Dataset | Images | Format | Used for |
+|---|---|---|---|
+| [MinhNKB Helmet-Safety-Vest](https://github.com/MinhNKB/helmet-safety-vest-detection) | 1,613 | Pascal VOC XML | Classification + semantic seg (5-class) |
+| [Jomarkow Hard Hat Workers](https://roboflow.com) | ~1,000 | YOLO TXT | End-to-end detection training |
+| [keremberke/protective-equipment-detection](https://huggingface.co/datasets/keremberke/protective-equipment-detection) | ~12,000 | COCO JSON | Segmentation (10-class, all 3 zips) |
+| [INRIA Person Dataset](https://huggingface.co/datasets/marcelarosalesj/inria-person) | 300 crops | HuggingFace | Person detector training |
+
+Datasets are stored at `D:/Claude/datasets/` (not in repo). The keremberke zips (`train.zip`, `test.zip`, `valid.zip`) must be placed in the project root before running `ppe_seg_keremberke_rebuild.py`.
 
 ---
 
@@ -115,55 +198,84 @@ PPE-Detection/
 
 ### Install dependencies
 ```bash
-pip install torch torchvision scikit-learn opencv-python ultralytics matplotlib seaborn pandas joblib
+pip install torch torchvision scikit-learn opencv-python ultralytics matplotlib seaborn pandas joblib python-docx
+npm install   # inside reports/ for document generation
 ```
 
-### Setup datasets
+### Setup MinhNKB + jomarkow datasets
 ```bash
 python setup_datasets.py
 ```
 
-### Train production models (CNN + all ML baselines)
+### Train production CNN + ML ensemble (Assignment 1)
 ```bash
 python src/ppe_production_train.py --epochs 100 --batch-size 256 --max-per-class 600
 ```
 
-### Run two-stage pipeline on an image
+### Fine-tune ViT-B/16 (Assignment 1, best classifier)
+```bash
+python src/ppe_vit_train.py
+```
+
+### Run two-stage inference pipeline
 ```bash
 python src/ppe_combined_pipeline.py
 ```
 
-### Fine-tune YOLOv8n person detector
+### Train YOLOv8n end-to-end detector (Assignment 2)
 ```bash
-yolo train data=person_detection/person_detect.yaml model=yolov8n.pt epochs=10 imgsz=416 freeze=9
+python person_detection/train_yolo_end2end.py
 ```
 
-### Run CCTV validation
+### Build keremberke segmentation dataset (Assignment 3)
 ```bash
-python src/ppe_cctv_validation.py
+# Place train.zip, test.zip, valid.zip in project root first
+python src/ppe_seg_keremberke_rebuild.py
 ```
 
-### Generate Word document report
+### Train DeepLabV3+ semantic segmentation (Assignment 3)
 ```bash
-cd reports && node create_prod_report.js
+python src/ppe_deeplab_train.py
 ```
+
+### Train YOLOv8n-seg instance segmentation (Assignment 3)
+```bash
+python src/ppe_yolo_seg_train.py
+```
+
+### Generate comparison chart (all 19+ models)
+```bash
+python src/ppe_experiment_comparison.py
+```
+
+### Generate Word document reports
+```bash
+# Final project report
+python reports/generate_assignment_report.py
+
+# Assignment 3 report
+cd reports && node gen_assignment3.js
+```
+
+---
+
+## Environment
+
+| | |
+|---|---|
+| Python | 3.10.6 |
+| PyTorch | 2.12.0.dev+cu128 |
+| CUDA | 12.8 |
+| GPU | RTX 5070 (12 GB VRAM) |
+| OS | Windows 11 |
 
 ---
 
 ## Ethical Considerations
 
-- **Face anonymisation** should be applied to all detected person crops before storage
-- **Data retention:** 24–72 hours for non-incident footage recommended
-- **Worker notification** required via signage and policy documentation
-- Model trained primarily on outdoor construction scenes — may underperform in some industrial settings
-- Tune `no_ppe` confidence threshold lower (0.35) to favour safety recall over precision
-
----
-
-## Future Improvements
-
-1. **More YOLOv8n fine-tuning** — 4 epochs trained (mAP50=0.679), target 0.85+ with 20+ epochs
-2. **Transfer learning** (MobileNetV2 / EfficientNet-B0) — expected +5–8%
-3. **Data augmentation** during training — expected +3–5%
-4. **YOLO end-to-end** (detect + classify in one pass) — expected +10–15%
-5. **More `partial_ppe` / `full_ppe` training data** — addresses weakest classes (F1 0.76/0.77)
+- **Face anonymisation** should be applied to all person crops before storage or logging.
+- **Data retention:** 24–72 hours recommended for non-incident footage.
+- **Worker notification** is required — signage and written policy.
+- Models trained on construction and warehouse scenes may underperform in other industrial environments.
+- The keremberke 10-class model should not be used for whole-person PPE compliance decisions — it detects individual items, not overall compliance state.
+- Tune `no_ppe` / `no_helmet` confidence thresholds lower (≈0.35) to favour safety recall over precision.
