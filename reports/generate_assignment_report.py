@@ -113,16 +113,23 @@ def main():
     row_cells[2].text = '93.90 percent'
     
     row_cells = table.add_row().cells
-    row_cells[0].text = 'YOLOv8 End to End'
+    row_cells[0].text = 'YOLOv8n End to End (5 class)'
     row_cells[1].text = 'Fine tuned Object Detection'
-    row_cells[2].text = '0.873 Precision'
+    row_cells[2].text = '86.3 percent mAP50'
+
+    row_cells = table.add_row().cells
+    row_cells[0].text = 'SAM2 Masked CNN'
+    row_cells[1].text = 'Synthetic background removal'
+    row_cells[2].text = '74.48 percent'
 
     doc.add_paragraph(
         "\nAs the table shows, the custom Convolutional Neural Network achieved 87.33 percent, which vastly outperformed traditional machine learning models but lacked scalable depth. "
         f"A blank ResNet parameter model trained strictly from scratch achieved {blank_acc} percent. This proved that large networks struggle heavily without pretrained generalized anchors. "
         f"However, a frozen ResNet loaded with ImageNet weights efficiently achieved {frozen_acc} percent just by training its final layer. "
         "A natively fine tuned Vision Transformer achieved state of the art pure classification precision at 93.90 percent. "
-        "Finally, YOLO natively scanned raw scenes end to end and localized objects with an incredible precision mapping of 0.873."
+        "Our end to end YOLOv8n detector trained directly on all five PPE classes achieved a strong mAP50 of 86.3 percent across 2609 scenes. "
+        "The SAM2 masked CNN experiment showed that zeroing out scene backgrounds actually reduced accuracy to 74.48 percent, "
+        "demonstrating that contextual body and scene information assists classification rather than harming it."
     )
 
     # Experimentation Section
@@ -135,24 +142,25 @@ def main():
         "Ultimately, integrating transfer learning via Vision Transformers established our highest global precision point at 93.90 percent. "
         "Unfortunately, its massive parameter complexity created slow processing speeds compared to our custom simple network. "
         "Conversely, deploying our YOLO framework entirely bypassed the slow cropping phase to secure top tier detection directly on raw video frames. "
-        "For scalable real time inference across camera streams, this approach provides massive operational value in environments constrained by tracking speed and latency."
+        "For scalable real time inference across camera streams, this approach provides massive operational value in environments constrained by tracking speed and latency. "
+        "Our synthetic masking experiment using SAM2 pseudo masks revealed an important insight: removing background context actually degraded classification performance from 87.33 percent down to 74.48 percent. "
+        "This finding confirms that PPE classifiers benefit from surrounding body and environment context when distinguishing between partial and full safety equipment coverage."
     )
 
     # Add images
     doc.add_heading('Appendix: Model Confusion Matrices and Heatmaps', level=2)
     doc.add_paragraph("Note: All confusion matrices and plots below were generated strictly using 20% unseen Testing Data to ensure objective evaluation.")
     
+    # reports/ is one level inside the project root
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # 1. ViT
     vit_path = os.path.join(base, 'results', 'models', 'prod_vit_confusion.png')
     add_image_if_exists(doc, vit_path, 'Fine Tuned Vision Transformer Confusion Matrix (Testing Data)')
 
-    # YOLO
-    yolo_path = os.path.join(base, 'runs', 'detect', 'yolov8_ppe_e2e_prod3', 'confusion_matrix.png')
-    if not os.path.exists(yolo_path):
-        yolo_path = os.path.join(base, 'runs', 'detect', 'yolov8_ppe_e2e_prod', 'confusion_matrix.png')
-    add_image_if_exists(doc, yolo_path, 'YOLOv8 End to End Object Detection Confusion Matrix (Testing Data)')
+    # YOLO — use copy saved to results/models/
+    yolo_path = os.path.join(base, 'results', 'models', 'yolo_e2e_confusion.png')
+    add_image_if_exists(doc, yolo_path, 'YOLOv8n End to End Object Detection Confusion Matrix (Testing Data)')
     
     # 2. CNN
     cnn_path = os.path.join(base, 'results', 'models', 'prod_cnn_confusion.png')
@@ -165,6 +173,14 @@ def main():
     # 4. Traditional ML: Random Forest
     rf_path = os.path.join(base, 'results', 'models', 'prod_rf_confusion_single.png')
     add_image_if_exists(doc, rf_path, 'Traditional ML Random Forest Confusion Matrix (Testing Data)')
+
+    # 5. SAM2 Masked CNN
+    masked_path = os.path.join(base, 'results', 'models', 'masked_cnn_confusion.png')
+    add_image_if_exists(doc, masked_path, 'SAM2 Masked CNN Confusion Matrix (Testing Data)')
+
+    # 6. Experiment comparison chart
+    comp_path = os.path.join(base, 'results', 'models', 'experiment_comparison.png')
+    add_image_if_exists(doc, comp_path, 'Full Model Comparison (17 models)')
 
     docs_dir = os.path.join(base, "docs")
     os.makedirs(docs_dir, exist_ok=True)
