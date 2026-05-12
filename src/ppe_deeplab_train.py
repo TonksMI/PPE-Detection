@@ -1,18 +1,28 @@
 """
-DeepLabV3+ Semantic Segmentation for PPE (6 classes)
-=====================================================
-Fine-tunes torchvision deeplabv3_resnet50 on the combined segmentation dataset
-produced by ppe_seg_data_prep.py.
+DeepLabV3+ Semantic Segmentation — Keremberke 10-class schema
+=============================================================
+Fine-tunes torchvision deeplabv3_resnet50 on the keremberke dataset built
+by ppe_seg_keremberke_rebuild.py.
 
 Classes (pixel values in mask PNG):
-  0=background  1=full_ppe  2=helmet  3=no_ppe  4=partial_ppe  5=safety_vest
+  0  = background
+  1  = helmet
+  2  = no_helmet
+  3  = glove
+  4  = no_glove
+  5  = goggles
+  6  = no_goggles
+  7  = mask
+  8  = no_mask
+  9  = shoes
+  10 = no_shoes
 
 Outputs (all in results/models/):
   deeplab_model.pth        best weights
   deeplab_results.csv      mIoU, pixel_acc, per-class IoU
   deeplab_training.png     loss + mIoU curves
   deeplab_pred_grid.png    4x4 val prediction grid
-  deeplab_confusion.png    per-class IoU heatmap
+  deeplab_confusion.png    per-class IoU bar chart
 """
 
 import os
@@ -29,27 +39,52 @@ from PIL import Image
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import seaborn as sns
 from pathlib import Path
 
 random.seed(42); np.random.seed(42); torch.manual_seed(42)
 
-# ── Paths ─────────────────────────────────────────────────────────────────
-for _cand in ["D:/datasets/ppe_seg", "D:/Claude/datasets/ppe_seg",
-              str(Path(__file__).resolve().parents[2] / "datasets" / "ppe_seg")]:
+# ── Paths ──────────────────────────────────────────────────────────────────
+for _cand in ["D:/datasets/ppe_seg_ke", "D:/Claude/datasets/ppe_seg_ke",
+              str(Path(__file__).resolve().parents[2] / "datasets" / "ppe_seg_ke")]:
     if os.path.exists(os.path.join(_cand, "semantic", "train", "images")):
         SEM_ROOT = os.path.join(_cand, "semantic")
         break
 else:
-    raise FileNotFoundError("ppe_seg/semantic dataset not found — run ppe_seg_data_prep.py first")
+    raise FileNotFoundError("ppe_seg_ke/semantic not found — run ppe_seg_keremberke_rebuild.py first")
 
 OUT_DIR = str(Path(__file__).resolve().parent.parent / "results" / "models")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-CLASSES   = ["background", "full_ppe", "helmet", "no_ppe", "partial_ppe", "safety_vest"]
-N_CLASSES = len(CLASSES)   # 6
+# Keremberke native classes
+CLASSES = [
+    "background",
+    "helmet",   "no_helmet",
+    "glove",    "no_glove",
+    "goggles",  "no_goggles",
+    "mask",     "no_mask",
+    "shoes",    "no_shoes",
+]
+N_CLASSES = len(CLASSES)   # 11
 IGNORE    = 255
+
+# Per-class loss weight: down-weight background, up-weight all PPE classes
+CLASS_WEIGHTS = [0.2] + [2.0] * (N_CLASSES - 1)
+
+# Colours for prediction grid (BGR → RGB for matplotlib)
+COLORS = np.array([
+    [0,   0,   0  ],   # 0  background  black
+    [39,  174, 96 ],   # 1  helmet      green
+    [231, 76,  60 ],   # 2  no_helmet   red
+    [52,  152, 219],   # 3  glove       blue
+    [155, 89,  182],   # 4  no_glove    purple
+    [241, 196, 15 ],   # 5  goggles     yellow
+    [230, 126, 34 ],   # 6  no_goggles  orange
+    [26,  188, 156],   # 7  mask        teal
+    [192, 57,  43 ],   # 8  no_mask     dark red
+    [149, 165, 166],   # 9  shoes       grey
+    [44,  62,  80 ],   # 10 no_shoes    navy
+], dtype=np.uint8)
+
 
 # ── Dataset ────────────────────────────────────────────────────────────────
 class SegDataset(Dataset):
@@ -58,16 +93,16 @@ class SegDataset(Dataset):
     def __init__(self, split, augment=False):
         img_dir  = os.path.join(SEM_ROOT, split, "images")
         mask_dir = os.path.join(SEM_ROOT, split, "masks")
-        self.samples  = []
-        self.augment  = augment
+        self.samples = []
+        self.augment = augment
 
         for fname in sorted(os.listdir(img_dir)):
             if not fname.lower().endswith((".jpg", ".jpeg", ".png")):
                 continue
-            stem      = os.path.splitext(fname)[0]
-            mask_path = os.path.join(mask_dir, stem + ".png")
-            if os.path.exists(mask_path):
-                self.samples.append((os.path.join(img_dir, fname), mask_path))
+            stem = os.path.splitext(fname)[0]
+            mp   = os.path.join(mask_dir, stem + ".png")
+            if os.path.exists(mp):
+                self.samples.append((os.path.join(img_dir, fname), mp))
 
         self.img_tf = transforms.Compose([
             transforms.Resize((self.SIZE, self.SIZE)),
@@ -86,34 +121,35 @@ class SegDataset(Dataset):
         if self.augment and random.random() < 0.5:
             img  = img.transpose(Image.FLIP_LEFT_RIGHT)
             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+        if self.augment and random.random() < 0.3:
+            img = transforms.functional.adjust_brightness(img, 0.7 + 0.6 * random.random())
+        if self.augment and random.random() < 0.3:
+            img = transforms.functional.adjust_contrast(img, 0.7 + 0.6 * random.random())
 
         img  = self.img_tf(img)
         mask = torch.from_numpy(
-            np.array(mask.resize((self.SIZE, self.SIZE),
-                                  Image.NEAREST), dtype=np.int64)
+            np.array(mask.resize((self.SIZE, self.SIZE), Image.NEAREST), dtype=np.int64)
         )
-        # Clamp invalid class indices to background
         mask = mask.clamp(0, N_CLASSES - 1)
         return img, mask
 
 
 # ── IoU helpers ────────────────────────────────────────────────────────────
 def compute_iou(pred, target, n_classes):
-    """Returns per-class IoU (NaN for absent classes) and mean over present."""
     ious = []
-    pred   = pred.cpu().numpy().flatten()
-    target = target.cpu().numpy().flatten()
+    pred_f   = pred.cpu().numpy().flatten()
+    target_f = target.cpu().numpy().flatten()
     for c in range(n_classes):
-        tp = ((pred == c) & (target == c)).sum()
-        fp = ((pred == c) & (target != c)).sum()
-        fn = ((pred != c) & (target == c)).sum()
+        tp    = ((pred_f == c) & (target_f == c)).sum()
+        fp    = ((pred_f == c) & (target_f != c)).sum()
+        fn    = ((pred_f != c) & (target_f == c)).sum()
         denom = tp + fp + fn
         ious.append(float(tp) / denom if denom > 0 else float('nan'))
     valid = [v for v in ious if not np.isnan(v)]
     return ious, (sum(valid) / len(valid)) if valid else 0.0
 
 
-# ── Training ───────────────────────────────────────────────────────────────
+# ── Main ───────────────────────────────────────────────────────────────────
 def main():
     EPOCHS = 30
     BATCH  = 8
@@ -121,8 +157,9 @@ def main():
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print("=" * 65)
-    print("DeepLabV3+ SEMANTIC PPE SEGMENTATION")
+    print("DeepLabV3+ — KEREMBERKE 10-CLASS SEGMENTATION")
     print(f"Device: {DEVICE}  |  Epochs: {EPOCHS}  |  Batch: {BATCH}")
+    print(f"Classes: {CLASSES}")
     print("=" * 65)
 
     train_ds = SegDataset("train", augment=True)
@@ -134,17 +171,13 @@ def main():
     val_ldr   = DataLoader(val_ds,   batch_size=BATCH, shuffle=False,
                            num_workers=4, pin_memory=True)
 
-    # Load pretrained DeepLabV3+ and replace classifier head
     model = deeplabv3_resnet50(weights=DeepLabV3_ResNet50_Weights.DEFAULT)
-    model.classifier[-1] = nn.Conv2d(256, N_CLASSES, kernel_size=1)
+    model.classifier[-1]     = nn.Conv2d(256, N_CLASSES, kernel_size=1)
     model.aux_classifier[-1] = nn.Conv2d(256, N_CLASSES, kernel_size=1)
     model = model.to(DEVICE)
 
-    # Class-frequency weighting (background is ~80% of pixels; upweight rare PPE)
-    class_weights = torch.tensor(
-        [0.2, 2.0, 2.0, 2.0, 2.0, 2.0], dtype=torch.float32
-    ).to(DEVICE)
-    criterion = nn.CrossEntropyLoss(weight=class_weights, ignore_index=IGNORE)
+    class_weights = torch.tensor(CLASS_WEIGHTS, dtype=torch.float32).to(DEVICE)
+    criterion     = nn.CrossEntropyLoss(weight=class_weights, ignore_index=IGNORE)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -194,13 +227,13 @@ def main():
             best_miou  = val_miou
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
 
-        if ep % 5 == 0:
+        if ep % 5 == 0 or ep == 1:
             print(f"Ep {ep:3d}/{EPOCHS}  "
-                  f"train_loss={train_loss:.4f}  val_loss={val_loss:.4f}  "
-                  f"val_mIoU={val_miou:.4f}  best={best_miou:.4f}")
+                  f"train={train_loss:.4f}  val={val_loss:.4f}  "
+                  f"mIoU={val_miou:.4f}  best={best_miou:.4f}")
 
     elapsed = time.time() - t0
-    print(f"\nTraining complete in {elapsed/60:.1f}m  best_mIoU={best_miou:.4f}")
+    print(f"\nDone in {elapsed/60:.1f}m  best_mIoU={best_miou:.4f}")
 
     # ── Save checkpoint ──
     model.load_state_dict(best_state)
@@ -208,40 +241,36 @@ def main():
                 "classes": CLASSES, "best_miou": best_miou},
                os.path.join(OUT_DIR, "deeplab_model.pth"))
 
-    # ── Final per-class evaluation ──
+    # ── Final per-class IoU ──
     model.eval()
-    all_preds_flat, all_masks_flat = [], []
+    all_preds, all_masks = [], []
     with torch.no_grad():
         for imgs, masks in val_ldr:
             preds = model(imgs.to(DEVICE))["out"].argmax(1)
-            all_preds_flat.append(preds.cpu())
-            all_masks_flat.append(masks)
+            all_preds.append(preds.cpu())
+            all_masks.append(masks)
+    all_preds = torch.cat(all_preds)
+    all_masks = torch.cat(all_masks)
+    per_iou, mean_iou = compute_iou(all_preds, all_masks, N_CLASSES)
 
-    all_preds = torch.cat(all_preds_flat)
-    all_masks = torch.cat(all_masks_flat)
-    per_class_ious, mean_iou = compute_iou(all_preds, all_masks, N_CLASSES)
-
-    # Pixel accuracy
-    valid     = (all_masks != IGNORE)
-    pixel_acc = ((all_preds == all_masks) & valid).sum().float() / valid.sum().float()
+    valid_px  = (all_masks != IGNORE)
+    pixel_acc = ((all_preds == all_masks) & valid_px).sum().float() / valid_px.sum().float()
 
     print("\nPer-class IoU:")
-    for cls, iou in zip(CLASSES, per_class_ious):
+    for cls, iou in zip(CLASSES, per_iou):
         print(f"  {cls:15s}: {iou:.4f}" if not np.isnan(iou) else f"  {cls:15s}: N/A")
     print(f"Mean IoU:  {mean_iou:.4f}")
     print(f"Pixel Acc: {float(pixel_acc):.4f}")
 
-    # ── Write CSV ──
+    # ── CSV ──
     csv_path = os.path.join(OUT_DIR, "deeplab_results.csv")
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
-        header = ["Model", "Task", "mIoU", "Pixel_Acc", "Train_Time(s)"] + \
-                 [f"IoU_{c}" for c in CLASSES]
-        w.writerow(header)
-        row = ["DeepLabV3+ ResNet50", "semantic_seg",
-               f"{mean_iou:.4f}", f"{float(pixel_acc):.4f}", f"{elapsed:.1f}"]
-        row += [f"{v:.4f}" if not np.isnan(v) else "" for v in per_class_ious]
-        w.writerow(row)
+        w.writerow(["Model", "Task", "mIoU", "Pixel_Acc", "Train_Time(s)"] +
+                   [f"IoU_{c}" for c in CLASSES])
+        w.writerow(["DeepLabV3+ ResNet50", "semantic_seg",
+                    f"{mean_iou:.4f}", f"{float(pixel_acc):.4f}", f"{elapsed:.1f}"] +
+                   [f"{v:.4f}" if not np.isnan(v) else "" for v in per_iou])
     print(f"Saved {csv_path}")
 
     # ── Training curves ──
@@ -249,46 +278,40 @@ def main():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
     ax1.plot(eps, history["train_loss"], "r-", label="Train")
     ax1.plot(eps, history["val_loss"],   "b-", label="Val")
-    ax1.set_title("DeepLab Loss"); ax1.legend()
+    ax1.set_title("Loss"); ax1.legend()
     ax2.plot(eps, history["val_miou"], "g-", label="Val mIoU")
     ax2.axhline(best_miou, color="purple", linestyle="--",
                 label=f"Best: {best_miou:.3f}")
-    ax2.set_title("DeepLab mIoU"); ax2.legend()
+    ax2.set_title("mIoU"); ax2.legend()
+    plt.suptitle("DeepLabV3+ Keremberke 10-class")
     plt.tight_layout()
     plt.savefig(os.path.join(OUT_DIR, "deeplab_training.png"), dpi=150)
     plt.close()
 
     # ── Per-class IoU bar chart ──
-    present = [(c, v) for c, v in zip(CLASSES, per_class_ious)
-               if not np.isnan(v)]
+    present = [(c, v) for c, v in zip(CLASSES, per_iou) if not np.isnan(v)]
     names, vals = zip(*present) if present else ([], [])
-    fig, ax = plt.subplots(figsize=(9, 4))
-    bars = ax.bar(names, vals, color="#4C72B0", edgecolor="white")
+    fig, ax = plt.subplots(figsize=(13, 4))
+    colours = [f"#{COLORS[i][0]:02X}{COLORS[i][1]:02X}{COLORS[i][2]:02X}"
+               for i, (c, _) in enumerate(present)
+               if i < len(COLORS)]
+    bars = ax.bar(names, vals, color=colours[:len(names)], edgecolor="white")
     ax.axhline(mean_iou, color="crimson", linestyle="--",
                label=f"Mean IoU={mean_iou:.3f}")
     for bar, v in zip(bars, vals):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                f"{v:.3f}", ha="center", va="bottom", fontsize=9)
+                f"{v:.3f}", ha="center", va="bottom", fontsize=8)
     ax.set_ylim(0, 1.05)
-    ax.set_title("DeepLabV3+ Per-Class IoU (val)")
+    ax.set_title("DeepLabV3+ Per-Class IoU (keremberke 10-class, val)")
+    ax.tick_params(axis='x', rotation=30)
     ax.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(OUT_DIR, "deeplab_confusion.png"), dpi=150)
     plt.close()
 
-    # ── Prediction grid (up to 8 samples) ──
-    COLORS = np.array([
-        [0,   0,   0  ],   # 0 bg      black
-        [128, 0,   128],   # 1 full    purple
-        [39,  174, 96 ],   # 2 helmet  green
-        [231, 76,  60 ],   # 3 no_ppe  red
-        [230, 126, 34 ],   # 4 partial orange
-        [41,  128, 185],   # 5 vest    blue
-    ], dtype=np.uint8)
-
+    # ── Prediction grid (8 val samples) ──
     mean_t = torch.tensor([0.485, 0.456, 0.406]).view(3,1,1)
     std_t  = torch.tensor([0.229, 0.224, 0.225]).view(3,1,1)
-
     n_samples = min(8, len(val_ds))
     val_items = [val_ds[i] for i in range(n_samples)]
     fig, axes = plt.subplots(4, 4, figsize=(14, 14))
@@ -299,17 +322,14 @@ def main():
             pred = model(img_t.unsqueeze(0).to(DEVICE))["out"].argmax(1)[0].cpu()
             img_np = ((img_t * std_t + mean_t).permute(1,2,0).numpy() * 255).clip(0,255).astype(np.uint8)
             row, base_col = divmod(i, 2)
-            axes[row][base_col*2].imshow(img_np); axes[row][base_col*2].axis("off")
-            axes[row][base_col*2].set_title("Image", fontsize=8)
-            pred_rgb = COLORS[pred.numpy()]
-            axes[row][base_col*2+1].imshow(pred_rgb); axes[row][base_col*2+1].axis("off")
-            axes[row][base_col*2+1].set_title("Pred", fontsize=8)
-
-    plt.suptitle("DeepLabV3+ Predictions", fontsize=12)
+            axes[row][base_col*2  ].imshow(img_np);         axes[row][base_col*2  ].axis("off"); axes[row][base_col*2  ].set_title("Image", fontsize=8)
+            pred_rgb = COLORS[pred.numpy().clip(0, N_CLASSES-1)]
+            axes[row][base_col*2+1].imshow(pred_rgb);       axes[row][base_col*2+1].axis("off"); axes[row][base_col*2+1].set_title("Pred",  fontsize=8)
+    plt.suptitle("DeepLabV3+ Predictions (keremberke)", fontsize=12)
     plt.tight_layout()
     plt.savefig(os.path.join(OUT_DIR, "deeplab_pred_grid.png"), dpi=150)
     plt.close()
-    print(f"Saved plots to {OUT_DIR}")
+    print(f"Saved all plots to {OUT_DIR}")
 
 
 if __name__ == "__main__":
