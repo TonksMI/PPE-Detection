@@ -1,0 +1,2 @@
+Model,Task,mask_mAP50,box_mAP50,mask_mAP50_95,box_mAP50_95,Precision,Recall,Train_Time(s),Architecture,Params_K,Notes
+YOLOv8n-seg (PPE),instance_seg,0.141,0.400,0.0373,0.218,0.529,0.405,580,YOLO,3259,5-class instance segmentation
