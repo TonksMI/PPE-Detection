@@ -1,0 +1,2 @@
+Model,Task,mIoU,Pixel_Acc,Train_Time(s),IoU_background,IoU_full_ppe,IoU_helmet,IoU_no_ppe,IoU_partial_ppe,IoU_safety_vest
+DeepLabV3+ ResNet50,semantic_seg,0.4098,0.8618,4431.7,0.8612,0.3755,0.0972,0.3581,0.4064,0.3601
