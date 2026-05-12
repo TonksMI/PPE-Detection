@@ -1,5 +1,15 @@
 {
   "dependencies": {
-    "docx": "^9.6.0"
-  }
+    "docx": "^9.6.1"
+  },
+  "name": "reports",
+  "version": "1.0.0",
+  "main": "create_prod_report.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
