@@ -16,3 +16,5 @@ UNet,segmentation,,0.562125,,,UNet,7700,6191.9,Segmentation (mIoU metric)
 ViT-B-16 (fine-tuned),multi,0.939,,0.9218,0.9387,ViT,86000,,"ImageNet pretrained, 20ep fine-tune"
 MaskedCNN (SAM2+ellipse),multi,0.7448,,0.7374,0.7454,CNN,226,9.1,SAM2 background removal
 YOLOv8n (end-to-end PPE),detection,0.863,,,,YOLO,3006,352.8,5-class end-to-end detection
+DeepLabV3+ ResNet50,semantic_seg,,0.4098,,,DeepLab,39000,4431.7,6-class semantic segmentation
+YOLOv8n-seg (PPE),instance_seg,0.4,0.141,,,YOLO,3259,580.0,5-class instance segmentation

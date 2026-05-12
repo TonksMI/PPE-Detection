@@ -49,6 +49,7 @@ PARAM_COUNTS = {
     'UNet':      7700,
     'ViT':       86000,
     'YOLO':      3006,
+    'DeepLab':  39000,
     'SVM':          0,
     'RF':           0,
     'ExtraTrees':   0,
@@ -64,6 +65,7 @@ ARCH_COLOURS = {
     'UNet':       '#8172B2',
     'ViT':        '#E07B54',
     'YOLO':       '#2CA02C',
+    'DeepLab':    '#17BECF',
     'SVM':        '#CCB974',
     'RF':         '#64B5CD',
     'ExtraTrees': '#DD8452',
@@ -96,6 +98,8 @@ def _infer_arch(model_name: str) -> str:
         return 'LSTM'
     if 'unet' in mn or 'u-net' in mn:
         return 'UNet'
+    if 'deeplab' in mn or 'deeplabv3' in mn:
+        return 'DeepLab'
     if 'cnn' in mn or 'ppenet' in mn:
         return 'CNN'
     return 'CNN'
@@ -289,6 +293,52 @@ def load_and_harmonise(out_dir: str) -> pd.DataFrame:
     except Exception as exc:
         print(f"  WARNING: could not load yolo_e2e_results.csv -- {exc}")
 
+    # ------------------------------------------------------------------
+    # 8. deeplab_results.csv  (DeepLabV3+ semantic segmentation)
+    # ------------------------------------------------------------------
+    path = os.path.join(out_dir, "deeplab_results.csv")
+    try:
+        df = pd.read_csv(path)
+        for _, r in df.iterrows():
+            rows.append({
+                'Model':        str(r['Model']),
+                'Task':         'semantic_seg',
+                'Accuracy':     np.nan,
+                'mIoU':         float(r['mIoU']) if pd.notna(r.get('mIoU')) else np.nan,
+                'Macro_F1':     np.nan,
+                'Weighted_F1':  np.nan,
+                'Architecture': 'DeepLab',
+                'Params_K':     PARAM_COUNTS['DeepLab'],
+                'Train_Time_s': float(r['Train_Time(s)']) if pd.notna(r.get('Train_Time(s)')) else np.nan,
+                'Notes':        '6-class semantic segmentation',
+            })
+        print(f"  Loaded {len(df)} rows from deeplab_results.csv")
+    except Exception as exc:
+        print(f"  WARNING: could not load deeplab_results.csv -- {exc}")
+
+    # ------------------------------------------------------------------
+    # 9. yolo_seg_results.csv  (YOLOv8n-seg instance segmentation)
+    # ------------------------------------------------------------------
+    path = os.path.join(out_dir, "yolo_seg_results.csv")
+    try:
+        df = pd.read_csv(path)
+        for _, r in df.iterrows():
+            rows.append({
+                'Model':        str(r['Model']),
+                'Task':         'instance_seg',
+                'Accuracy':     float(r['box_mAP50']) if pd.notna(r.get('box_mAP50')) else np.nan,
+                'mIoU':         float(r['mask_mAP50']) if pd.notna(r.get('mask_mAP50')) else np.nan,
+                'Macro_F1':     np.nan,
+                'Weighted_F1':  np.nan,
+                'Architecture': 'YOLO',
+                'Params_K':     int(r['Params_K']) if pd.notna(r.get('Params_K')) else PARAM_COUNTS['YOLO'],
+                'Train_Time_s': float(r['Train_Time(s)']) if pd.notna(r.get('Train_Time(s)')) else np.nan,
+                'Notes':        str(r.get('Notes', '')),
+            })
+        print(f"  Loaded {len(df)} rows from yolo_seg_results.csv")
+    except Exception as exc:
+        print(f"  WARNING: could not load yolo_seg_results.csv -- {exc}")
+
     if not rows:
         return pd.DataFrame()
 
@@ -316,14 +366,21 @@ def plot_accuracy_comparison(df: pd.DataFrame, out_path: str) -> None:
         lambda v: f"{v*100:.2f}% (mAP50)" if pd.notna(v) else "N/A"
     )
 
-    # Segmentation rows (UNet) — use mIoU
-    seg_df = df[df['Task'] == 'segmentation'].copy()
+    # Segmentation rows (UNet / DeepLab) — use mIoU
+    seg_df = df[df['Task'].isin(['segmentation', 'semantic_seg'])].copy()
     seg_df['_metric'] = seg_df['mIoU']
     seg_df['_label']  = seg_df['mIoU'].map(
         lambda v: f"{v*100:.2f}% (mIoU)" if pd.notna(v) else "N/A"
     )
 
-    plot_df = pd.concat([cls_df, det_df, seg_df], ignore_index=True)
+    # Instance segmentation rows (YOLOv8-seg) — use box mAP50 stored in Accuracy
+    inst_df = df[df['Task'] == 'instance_seg'].copy()
+    inst_df['_metric'] = inst_df['Accuracy']
+    inst_df['_label']  = inst_df['Accuracy'].map(
+        lambda v: f"{v*100:.2f}% (box mAP50)" if pd.notna(v) else "N/A"
+    )
+
+    plot_df = pd.concat([cls_df, det_df, seg_df, inst_df], ignore_index=True)
     plot_df = plot_df.dropna(subset=['_metric'])
     plot_df = plot_df.sort_values('_metric', ascending=True)
 

@@ -122,6 +122,16 @@ def main():
     row_cells[1].text = 'Synthetic background removal'
     row_cells[2].text = '74.48 percent'
 
+    row_cells = table.add_row().cells
+    row_cells[0].text = 'DeepLabV3+ ResNet50'
+    row_cells[1].text = 'Pixel wise semantic segmentation'
+    row_cells[2].text = '40.98 percent mIoU, 86.18 percent pixel acc'
+
+    row_cells = table.add_row().cells
+    row_cells[0].text = 'YOLOv8n seg (5 class)'
+    row_cells[1].text = 'Instance segmentation'
+    row_cells[2].text = '40.0 percent box mAP50, 14.1 percent mask mAP50'
+
     doc.add_paragraph(
         "\nAs the table shows, the custom Convolutional Neural Network achieved 87.33 percent, which vastly outperformed traditional machine learning models but lacked scalable depth. "
         f"A blank ResNet parameter model trained strictly from scratch achieved {blank_acc} percent. This proved that large networks struggle heavily without pretrained generalized anchors. "
@@ -129,7 +139,24 @@ def main():
         "A natively fine tuned Vision Transformer achieved state of the art pure classification precision at 93.90 percent. "
         "Our end to end YOLOv8n detector trained directly on all five PPE classes achieved a strong mAP50 of 86.3 percent across 2609 scenes. "
         "The SAM2 masked CNN experiment showed that zeroing out scene backgrounds actually reduced accuracy to 74.48 percent, "
-        "demonstrating that contextual body and scene information assists classification rather than harming it."
+        "demonstrating that contextual body and scene information assists classification rather than harming it. "
+        "Our DeepLabV3+ semantic segmentation model achieved a mean IoU of 40.98 percent and a pixel accuracy of 86.18 percent across six classes including background. "
+        "Our YOLOv8n instance segmentation model achieved a box mAP50 of 40.0 percent and a mask mAP50 of 14.1 percent across five PPE classes."
+    )
+
+    # Pixel-Wise Analysis Section
+    doc.add_heading('Pixel-Wise PPE Analysis', level=2)
+    doc.add_paragraph(
+        "To push beyond classification into precise spatial understanding, we extended our pipeline with two pixel level models. "
+        "Our first approach used a DeepLabV3+ architecture with a pretrained ResNet50 backbone fine tuned for six class semantic segmentation. "
+        "Each pixel in a scene was assigned one of five PPE classes or background. "
+        "After 30 epochs on 1368 training images derived from the MinhNKB dataset with SAM2 generated instance masks, the model achieved a mean IoU of 40.98 percent and a pixel accuracy of 86.18 percent. "
+        "The high pixel accuracy reflects strong background identification, while the lower mean IoU reveals that rare PPE classes like safety vest and helmet remain challenging to segment precisely at the pixel level. "
+        "Our second approach used YOLOv8n seg trained on the same instance segmentation dataset with polygon masks derived from SAM2 box prompted segmentation. "
+        "This model achieved a box mAP50 of 40.0 percent and a mask mAP50 of 14.1 percent, demonstrating that instance level pixel labelling is significantly harder than box detection or classification. "
+        "The gap between box and mask scores shows the model can locate PPE items well but struggles to precisely delineate their boundaries at pixel resolution. "
+        "Together these experiments establish a complete spectrum: from whole image classification at 93.9 percent accuracy through object detection at 86.3 percent mAP50 to pixel precise semantic segmentation at 40.98 percent mIoU and instance segmentation at 14.1 percent mask mAP50. "
+        "This progression reflects the fundamental tradeoff between task complexity and achievable performance given the dataset size."
     )
 
     # Experimentation Section
@@ -178,9 +205,21 @@ def main():
     masked_path = os.path.join(base, 'results', 'models', 'masked_cnn_confusion.png')
     add_image_if_exists(doc, masked_path, 'SAM2 Masked CNN Confusion Matrix (Testing Data)')
 
-    # 6. Experiment comparison chart
+    # 6. DeepLab per-class IoU
+    deeplab_conf_path = os.path.join(base, 'results', 'models', 'deeplab_confusion.png')
+    add_image_if_exists(doc, deeplab_conf_path, 'DeepLabV3+ Per-Class IoU (Semantic Segmentation)')
+
+    # 7. DeepLab prediction grid
+    deeplab_grid_path = os.path.join(base, 'results', 'models', 'deeplab_pred_grid.png')
+    add_image_if_exists(doc, deeplab_grid_path, 'DeepLabV3+ Sample Predictions (Image vs Segmentation Mask)')
+
+    # 8. YOLO-seg confusion matrix
+    yolo_seg_conf_path = os.path.join(base, 'results', 'models', 'yolo_seg_confusion.png')
+    add_image_if_exists(doc, yolo_seg_conf_path, 'YOLOv8n-seg Instance Segmentation Confusion Matrix')
+
+    # 9. Experiment comparison chart
     comp_path = os.path.join(base, 'results', 'models', 'experiment_comparison.png')
-    add_image_if_exists(doc, comp_path, 'Full Model Comparison (17 models)')
+    add_image_if_exists(doc, comp_path, 'Full Model Comparison (19 models)')
 
     docs_dir = os.path.join(base, "docs")
     os.makedirs(docs_dir, exist_ok=True)
