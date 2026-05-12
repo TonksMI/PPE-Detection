@@ -48,6 +48,7 @@ PARAM_COUNTS = {
     'LSTM':       800,
     'UNet':      7700,
     'ViT':       86000,
+    'YOLO':      3006,
     'SVM':          0,
     'RF':           0,
     'ExtraTrees':   0,
@@ -62,6 +63,7 @@ ARCH_COLOURS = {
     'LSTM':       '#C44E52',
     'UNet':       '#8172B2',
     'ViT':        '#E07B54',
+    'YOLO':       '#2CA02C',
     'SVM':        '#CCB974',
     'RF':         '#64B5CD',
     'ExtraTrees': '#DD8452',
@@ -264,6 +266,29 @@ def load_and_harmonise(out_dir: str) -> pd.DataFrame:
     except Exception as exc:
         print(f"  WARNING: could not load masked_cnn_results.csv -- {exc}")
 
+    # ------------------------------------------------------------------
+    # 7. yolo_e2e_results.csv  (YOLOv8n end-to-end detection)
+    # ------------------------------------------------------------------
+    path = os.path.join(out_dir, "yolo_e2e_results.csv")
+    try:
+        df = pd.read_csv(path)
+        for _, r in df.iterrows():
+            rows.append({
+                'Model':        str(r['Model']),
+                'Task':         'detection',
+                'Accuracy':     float(r['mAP50']) if pd.notna(r.get('mAP50')) else np.nan,
+                'mIoU':         np.nan,
+                'Macro_F1':     np.nan,
+                'Weighted_F1':  np.nan,
+                'Architecture': 'YOLO',
+                'Params_K':     PARAM_COUNTS['YOLO'],
+                'Train_Time_s': float(r['Train_Time(s)']) if pd.notna(r.get('Train_Time(s)')) else np.nan,
+                'Notes':        str(r.get('Notes', '')),
+            })
+        print(f"  Loaded {len(df)} rows from yolo_e2e_results.csv")
+    except Exception as exc:
+        print(f"  WARNING: could not load yolo_e2e_results.csv -- {exc}")
+
     if not rows:
         return pd.DataFrame()
 
@@ -278,11 +303,18 @@ def load_and_harmonise(out_dir: str) -> pd.DataFrame:
 # Plot 1 — accuracy bar chart
 # ---------------------------------------------------------------------------
 def plot_accuracy_comparison(df: pd.DataFrame, out_path: str) -> None:
-    """Horizontal bar chart of model accuracy (multi-class + UNet mIoU)."""
+    """Horizontal bar chart of model accuracy (multi-class, detection mAP50, UNet mIoU)."""
     # Classification rows (multi task only)
     cls_df = df[df['Task'] == 'multi'].copy()
     cls_df['_metric'] = cls_df['Accuracy']
     cls_df['_label']  = cls_df['Accuracy'].map(lambda v: f"{v*100:.2f}%")
+
+    # Detection rows (YOLO) — use mAP50 stored in Accuracy column
+    det_df = df[df['Task'] == 'detection'].copy()
+    det_df['_metric'] = det_df['Accuracy']
+    det_df['_label']  = det_df['Accuracy'].map(
+        lambda v: f"{v*100:.2f}% (mAP50)" if pd.notna(v) else "N/A"
+    )
 
     # Segmentation rows (UNet) — use mIoU
     seg_df = df[df['Task'] == 'segmentation'].copy()
@@ -291,7 +323,7 @@ def plot_accuracy_comparison(df: pd.DataFrame, out_path: str) -> None:
         lambda v: f"{v*100:.2f}% (mIoU)" if pd.notna(v) else "N/A"
     )
 
-    plot_df = pd.concat([cls_df, seg_df], ignore_index=True)
+    plot_df = pd.concat([cls_df, det_df, seg_df], ignore_index=True)
     plot_df = plot_df.dropna(subset=['_metric'])
     plot_df = plot_df.sort_values('_metric', ascending=True)
 

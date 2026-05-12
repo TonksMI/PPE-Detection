@@ -1,0 +1,2 @@
+Model,Task,Accuracy,mAP50,mAP50_95,Precision,Recall,Train_Time(s),Architecture,Params_K,Notes
+YOLOv8n (end-to-end PPE),detection,0.863,0.863,0.581,0.870,0.780,352.8,YOLO,3006,5-class end-to-end detection

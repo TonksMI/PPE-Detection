@@ -10,12 +10,16 @@ import random
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# Paths
-BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if os.path.exists("D:/datasets/jomarkow"):
-    DATASETS = "D:/datasets"
+# Paths — check known locations in priority order
+for _candidate in ["D:/datasets", "D:/Claude/datasets",
+                    os.path.join(os.path.dirname(os.path.dirname(
+                        os.path.dirname(os.path.abspath(__file__)))), "datasets")]:
+    if os.path.exists(os.path.join(_candidate, "jomarkow")):
+        DATASETS = _candidate
+        break
 else:
-    DATASETS = os.path.join(BASE, "datasets")
+    DATASETS = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))), "datasets")
 
 MINHNKB_IMG = os.path.join(DATASETS, "helmet-safety-vest-detection-master/train-images-data")
 MINHNKB_ANN = os.path.join(DATASETS, "helmet-safety-vest-detection-master/train-images-annotations-new")
