@@ -138,15 +138,21 @@ function dataCell(text, widthDxa, shade = false) {
 
 // ── Overall results table ──────────────────────────────────────────────────
 function makeResultsTable() {
-  const cols = [3000, 2400, 1700, 2260];
+  const cols = [600, 2700, 1900, 1500, 2660];
   const rows = [
-    ["Model", "Training Paradigm", "Task", "Performance"],
-    ["DeepLabV3+ ResNet50", "Pretrained COCO+ImageNet, all layers fine-tuned",
+    ["Cat.", "Model", "Training Paradigm", "Task", "Performance"],
+    ["(d)", "DeepLabV3+ ResNet50",
+     "Pre-existing arch; COCO+ImageNet pretrained weights; all layers fine-tuned on keremberke",
      "Semantic Segmentation (11-class)",
      `mIoU = ${DEEPLAB_MIOU}  |  Pixel Acc = ${DEEPLAB_PIXACC}`],
-    ["YOLOv8n-seg", "Pretrained COCO, all layers fine-tuned",
+    ["(d)", "YOLOv8n-seg",
+     "Pre-existing arch; COCO pretrained weights; all layers fine-tuned on keremberke",
      "Instance Segmentation (10-class)",
      `Box mAP50 = ${YOLO_BOX}  |  Mask mAP50 = ${YOLO_MASK}`],
+    ["(c)", "DeepLabV3+ ResNet50 (zero-shot)",
+     "Pre-existing arch; COCO pretrained weights; NO fine-tuning — used as-is",
+     "Semantic Seg. zero-shot (11-class)",
+     "mIoU = 8.2%  (all PPE classes = 0%)"],
   ];
   return new Table({
     width: { size: 9360, type: WidthType.DXA },
@@ -352,7 +358,12 @@ const doc = new Document({
       P("Every pixel label in this dataset comes from SAM2 running on bounding box annotations rather than human-drawn polygon masks. SAM2 is accurate for clear, isolated objects but struggles when objects overlap or when a bounding box contains partial occlusion. Deep models handle this because stochastic mini-batches and augmentation average out consistent noise across many gradient updates. A classical pixel classifier trained on the same labels tends to memorise the noise directly."),
 
       H3("2.4 Quantitative evidence from prior work"),
-      P("Assignment 2 on this project established a concrete baseline for PPE recognition on person-level crops: a classical SVM with PCA features achieved 76.31% accuracy, a custom PPENet CNN reached 87.33%, and a fine-tuned ViT-B/16 reached 93.9%. That 17-percentage-point gap between the SVM and the best deep model exists even for the comparatively easy crop-level task, where each image contains one centred person filling most of the frame. Pixel-level segmentation is harder in every dimension: 262,144 pixels must be classified simultaneously rather than one label per image, background fills over 80 percent of the image area, the objects of interest may cover fewer than 50 pixels, and the model must maintain spatial coherence between adjacent pixel predictions. A support vector machine operating on hand-crafted feature vectors has no mechanism for any of these requirements. The gap between classical and deep approaches observed in Assignment 2 widens substantially at the pixel level."),
+      P("Assignment 2 on this project established a concrete baseline for PPE recognition on person-level crops using models from all four evaluation categories:"),
+      bullet("Category (a) — custom architecture trained from scratch: PPENet CNN, our own 3-block convolutional image classifier (32x32 input, 226K parameters), achieved 87.33% accuracy on 5-class crop classification. This is an image classification model — one label per person crop. No reference architecture was followed in its design."),
+      bullet("Category (b) — pre-existing architecture trained from scratch (no pretrained weights): a UNet semantic segmentation model (Ronneberger et al. 2015) trained from randomly initialised weights achieved mIoU of 56.2% on 5-class pixel-level segmentation of person crops. UNet is a well-known encoder-decoder architecture; training it from scratch establishes what the architecture can learn without any transfer from large-scale pre-training."),
+      bullet("Category (c) — pre-existing architecture with pre-trained weights, NOT fine-tuned: the COCO-pretrained DeepLabV3+ ResNet-50 semantic segmentation model run directly on our keremberke validation set without any fine-tuning scored 8.2% mIoU. All 10 PPE class IoUs are exactly 0% because the COCO output head has 21 classes (aeroplane, bicycle, bird, etc.) with no overlap with our label schema. This directly demonstrates that pre-trained weights cannot transfer predictions to an unseen label space without task-specific adaptation."),
+      bullet("Category (d) — pre-existing architectures with pre-trained weights, fine-tuned: ViT-B/16 image classification model fine-tuned on MinhNKB crop data reached 93.9% accuracy (A2). In Assignment 3, DeepLabV3+ ResNet-50 semantic segmentation model fine-tuned on keremberke reached 63.5% mIoU, and YOLOv8n-seg instance segmentation model fine-tuned on keremberke reached 87.1% mask mAP50."),
+      P("The 17-percentage-point accuracy gap between the SVM and the best deep model in Assignment 2 exists even for the comparatively easy crop-level task. Pixel-level segmentation is harder in every dimension: 262,144 pixels must be classified simultaneously, background fills over 80 percent of the image area, objects of interest may cover fewer than 50 pixels, and the model must maintain spatial coherence between adjacent pixel predictions. The gap between classical and deep approaches widens substantially at the pixel level. The (c) vs (d) contrast — 8.2% mIoU zero-shot versus 63.5% mIoU fine-tuned — quantifies exactly how much task-specific adaptation contributes on top of the pre-trained backbone."),
 
       // ── 3. Pipeline Architecture ──────────────────────────────────────────
       H1("3. Pipeline Architecture"),
@@ -364,7 +375,8 @@ const doc = new Document({
       bullet("Writes semantic masks as uint8 PNG files (pixel value = class index) and YOLO polygon labels as normalised .txt files."),
       bullet("Auto-generates ppe_seg_ke.yaml for YOLO training with correct class names, paths, and split references."),
 
-      H2("3.2 Semantic segmentation — DeepLabV3+ (ppe_deeplab_train.py)"),
+      H2("3.2 Semantic segmentation — DeepLabV3+ [Category (d)]"),
+      P("DeepLabV3+ ResNet-50 is a pre-existing architecture (Chen et al. 2018) loaded with weights pre-trained on ImageNet and COCO, then fine-tuned end-to-end on our keremberke dataset. This places it in category (d): pre-existing architecture with pre-trained weights that were fine-tuned. It performs dense pixel-level semantic segmentation — every pixel in the image receives one of 11 class labels (background + 10 PPE items) in a single forward pass."),
       bullet("Backbone: torchvision deeplabv3_resnet50 pretrained on COCO + ImageNet. ResNet-50 belongs to the same architectural family explored in Assignment 2, where ResNet-18 served as both a random-weight baseline (87.0% val accuracy from scratch) and a frozen transfer learning baseline. ResNet-50 extends this to 50 layers across four residual stages, providing richer spatial feature hierarchies required for dense pixel prediction rather than single-label image classification."),
       bullet("Head: classifier[-1] and aux_classifier[-1] replaced with nn.Conv2d(256, 11, 1) for 11 classes (background + 10 PPE items)."),
       bullet("Input: 512x512, bilinear resize for images, nearest-neighbour for masks. Random horizontal flip (p=0.5) and brightness/contrast jitter (p=0.3). ImageNet normalisation."),
@@ -372,7 +384,8 @@ const doc = new Document({
       bullet("Optimiser: AdamW lr=3e-4, weight_decay=1e-4, CosineAnnealingLR over 30 epochs, batch size 8."),
       bullet("Saves best checkpoint by validation mIoU. Outputs deeplab_results.csv with per-class IoU, mIoU, and pixel accuracy."),
 
-      H2("3.3 Instance segmentation — YOLOv8n-seg (ppe_yolo_seg_train.py)"),
+      H2("3.3 Instance segmentation — YOLOv8n-seg [Category (d)]"),
+      P("YOLOv8n-seg is a pre-existing architecture (Ultralytics 2023) loaded with COCO-pretrained weights, then fine-tuned end-to-end on our keremberke instance dataset. This also places it in category (d): pre-existing architecture with pre-trained weights that were fine-tuned. It performs instance segmentation — each detected PPE item receives its own separate polygon mask, bounding box, and class label, allowing multiple instances of the same class (e.g. two helmets on two workers) to be tracked independently. This differs from DeepLabV3+'s semantic approach, which assigns a single label per pixel without distinguishing between instances."),
       bullet("Base: COCO-pretrained YOLOv8n-seg. All layers fine-tuned on the keremberke instance dataset."),
       bullet("10 output classes matching the keremberke schema. YOLO uses 0-indexed classes with no background class."),
       bullet("Training: epochs=30, imgsz=640, batch=16, device=0."),
@@ -389,8 +402,9 @@ const doc = new Document({
       H3("4.2 YOLOv8n-seg — COCO backbone fine-tuned end to end"),
       P("YOLOv8n-seg starts from weights covering 80 COCO detection classes plus instance masks. All layers are fine-tuned on the 10 keremberke classes. COCO contains people in various poses holding objects and wearing hats, so feature anchors for small items on human bodies are already partially formed before training begins. Helmets, gloves, and goggles all appear in COCO-adjacent contexts. The network adapts these anchors to the specific geometric signatures of PPE items rather than learning them from scratch."),
 
-      H3("4.3 Why pretrained weights are necessary"),
-      P("The 10-class keremberke task is harder than it appears: objects are small relative to the full 1280x720 frame (a safety mask can be under 0.5 percent of image area), class frequencies span a 20:1 ratio, and all pixel labels come from SAM2 pseudo-annotation rather than human polygon masks. Starting from random weights with these constraints produces models that converge slowly and plateau at low mIoU. Pretrained encoders compress the early learning problem from scratch feature discovery into targeted task adaptation, which is where the 3,400-image training set is actually sufficient."),
+      H3("4.3 Category (c) vs (d): the value of fine-tuning"),
+      P("Running the COCO-pretrained DeepLabV3+ as-is on our validation set — category (c): pre-existing architecture with pre-trained weights that were not fine-tuned — produces 8.2% mIoU. Every one of the 10 PPE class IoU scores is exactly 0.0 because the COCO output head has 21 classes (aeroplane, bicycle, bird, etc.) that share no overlap with our label schema. Only background coincidentally maps to the same index. The model is producing meaningful low-level features — edges, textures, object boundaries from its ResNet-50 backbone — but those features feed into prediction heads that output the wrong class space entirely."),
+      P("Fine-tuning the same model on our 3,400 training images — category (d) — raises mIoU from 8.2% to 63.5%, a 55-point improvement. This gap is entirely attributable to replacing the COCO output head with an 11-class head and adapting all backbone weights to the PPE domain. The backbone features do transfer: the fine-tuned model converges in 30 epochs, whereas training the same architecture from randomly initialised weights on a dataset this size would require far more epochs to reach equivalent performance. The 10-class keremberke task is additionally hard because objects are small relative to the full image frame, class frequencies span a 20:1 ratio, and all pixel labels come from SAM2 pseudo-annotation rather than human polygon masks. Pretrained features accelerate convergence precisely because they contain already-useful detectors for edges, shapes, and textures that the 3,400-image training set alone could not fully learn."),
 
       // ── 5. Performance Evaluation ─────────────────────────────────────────
       H1("5. Performance Evaluation"),
@@ -400,7 +414,8 @@ const doc = new Document({
       makeResultsTable(),
       P("Both models were trained on 3,400 images from the keremberke dataset using the 10 native PPE item classes. All results are reported on the held-out 600-image validation set."),
 
-      H2("5.2 DeepLabV3+ per-class IoU"),
+      H2("5.2 DeepLabV3+ per-class IoU — Category (d)"),
+      P("DeepLabV3+ is evaluated here as a category (d) model: a pre-existing semantic segmentation architecture with ImageNet+COCO pre-trained weights that were fully fine-tuned on our keremberke 10-class data. It predicts a single class label per pixel across the entire image simultaneously."),
       P(""),
       makeIouTable(),
       P(""),
@@ -408,7 +423,8 @@ const doc = new Document({
       P("The two weakest classes are no_mask (51.7% IoU) and no_helmet (55.5%), both of which are absence classes. An absence region has no fixed visual signature — no_mask covers any lower face without a mask, meaning the pixels could look like skin, a beard, a scarf, or a construction bandana. The model must learn what is not present rather than what is. This parallels the partial_ppe and full_ppe weakness observed in Assignment 2 (F1 approximately 0.76-0.77), where judging overall compliance was harder than detecting a single salient object. The mask class itself (62.8% IoU) suffers from the smallest annotation count (269) and the smallest object size — at 512x512 input a face mask occupies roughly 400-600 pixels, placing it at the edge of reliable segmentation."),
       P("Targeted strategies to close these gaps: (1) focal loss (gamma=2) would down-weight easy background and well-classified pixels and concentrate gradient on hard examples like no_mask and no_helmet, which uniform class weights do not address; (2) class-specific oversampling — duplicating training images containing mask or no_mask annotations — would increase their gradient coverage without changing the loss hyperparameters; (3) separate specialist models for the two most challenging pairs (no_mask/mask and no_helmet/helmet) would eliminate inter-class competition at inference."),
 
-      H2("5.3 YOLOv8n-seg per-class results"),
+      H2("5.3 YOLOv8n-seg per-class results — Category (d)"),
+      P("YOLOv8n-seg is also a category (d) model: a pre-existing instance segmentation architecture with COCO pre-trained weights that were fully fine-tuned on our keremberke data. Unlike DeepLabV3+, it performs instance segmentation — detecting each PPE item as a separate object with its own polygon mask, bounding box, and confidence score. Two helmets on two different workers are reported as two separate instances. This makes it better suited to counting and per-person compliance checks, but it does not label every pixel in the scene and does not produce a background class."),
       P("The n column shows total annotation counts across the full keremberke dataset before the 4,000-image cap. Higher annotation counts correlate with higher mAP in most cases, but object geometry also matters. Helmet is a rigid, geometrically consistent shape that produces reliable polygon fits even at moderate annotation counts. Gloves and shoes deform constantly with hand and foot position, making polygon matching harder regardless of annotation volume."),
       P(""),
       makeYoloTable(),
@@ -455,21 +471,27 @@ const doc = new Document({
         const borders = { top: border, bottom: border, left: border, right: border };
         const hdrShading = { fill: "1F3864", type: ShadingType.CLEAR };
         const altShading  = { fill: "EEF2F7", type: ShadingType.CLEAR };
-        const cols = [480, 2300, 1200, 1000, 2380];
-        const hdr  = ["Cat", "Model", "Task", "Score", "Notes"];
+        const cols = [480, 2500, 1500, 1000, 1880];
+        const hdr  = ["Cat", "Model + Task Type", "Task", "Score", "Notes"];
         const rows = [
-          ["(a)", "PPENet CNN", "5-class crop classification (MinhNKB, A2)", "87.3% Acc",
-           "Custom design: 3 conv blocks (32→64→128 ch), AdaptiveAvgPool, FC 512→256→5, 226 K params. No reference architecture."],
-          ["(b)", "UNet", "5-class segmentation (MinhNKB, A2)", "56.2% mIoU",
-           "Pre-existing architecture (Ronneberger et al. 2015); trained from randomly initialised weights — no pretrained weights used."],
-          ["(c)", "DeepLabV3+ ResNet-50 (COCO zero-shot)", "10-class segmentation (keremberke, A3)", "8.2% mIoU*",
-           "COCO pretrained (21-class output head) used as-is with zero fine-tuning. *Background (index 0) coincidentally matches; all 10 PPE classes score 0 — classes do not align with our schema."],
-          ["(d)", "ViT-B/16", "5-class crop classification (MinhNKB, A2)", "93.9% Acc",
-           "ImageNet pretrained; all layers fine-tuned for 20 epochs on MinhNKB crops."],
-          ["(d)", "DeepLabV3+ ResNet-50", "10-class segmentation (keremberke, A3)", "63.5% mIoU",
-           "ImageNet+COCO pretrained; all backbone and decoder layers fine-tuned for 30 epochs on keremberke semantic masks."],
-          ["(d)", "YOLOv8n-seg", "10-class instance segmentation (keremberke, A3)", "87.1% Mask mAP50",
-           "COCO-seg pretrained; all layers fine-tuned for 30 epochs on keremberke instance polygon labels."],
+          ["(a)", "PPENet CNN\n[Image Classification]",
+           "5-class crop classification (MinhNKB, A2)", "87.3% Acc",
+           "Custom-designed architecture: 3 conv blocks (32-64-128 ch), AdaptiveAvgPool, FC 512-256-5, 226K params. No reference architecture. Classifies one person crop into one compliance state."],
+          ["(b)", "UNet\n[Semantic Segmentation]",
+           "5-class semantic segmentation (MinhNKB, A2)", "56.2% mIoU",
+           "Pre-existing encoder-decoder (Ronneberger et al. 2015); trained from randomly initialised weights, no pretrained weights. Labels every pixel in a crop with one of 5 compliance classes."],
+          ["(c)", "DeepLabV3+ ResNet-50\n[Semantic Seg, zero-shot]",
+           "10-class semantic seg. zero-shot (keremberke, A3)", "8.2% mIoU*",
+           "Pre-existing architecture; COCO pretrained 21-class head used as-is, no fine-tuning. *All 10 PPE class IoUs = 0 because COCO classes do not overlap our schema. Shows that pretrained weights cannot transfer predictions to an unseen label space."],
+          ["(d)", "ViT-B/16\n[Image Classification]",
+           "5-class crop classification (MinhNKB, A2)", "93.9% Acc",
+           "Pre-existing Vision Transformer; ImageNet pretrained; all layers fine-tuned 20 epochs. Classifies one person crop — same task as PPENet CNN (a) using an attention-based backbone."],
+          ["(d)", "DeepLabV3+ ResNet-50\n[Semantic Segmentation]",
+           "10-class semantic segmentation (keremberke, A3)", "63.5% mIoU",
+           "Pre-existing architecture; ImageNet+COCO pretrained; all layers fine-tuned 30 epochs. Labels every pixel in a full scene with one of 11 classes (background + 10 PPE items)."],
+          ["(d)", "YOLOv8n-seg\n[Instance Segmentation]",
+           "10-class instance segmentation (keremberke, A3)", "87.1% Mask mAP50",
+           "Pre-existing architecture; COCO pretrained; all layers fine-tuned 30 epochs. Detects each PPE item as a separate object instance with its own polygon mask — two helmets on two workers = two distinct instances."],
         ];
         const makeCell = (text, shading, bold, colIdx) =>
           new TableCell({
