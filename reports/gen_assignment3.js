@@ -447,6 +447,58 @@ const doc = new Document({
       bullet("CRF post-processing on DeepLabV3+ outputs would sharpen predicted boundaries at no retraining cost, at the expense of added inference time."),
       bullet("A two-stage pipeline combining a person detector with item-level segmentation on the resulting crops would reduce background dominance from ~80% to near zero and scale the input to match object size — directly extending the Assignment 2 two-stage architecture to pixel-level output."),
 
+      H3("6.8 Four-category model evaluation"),
+      P("The assignment requires evaluating performance across four model categories. The table below maps every trained model in this project to its category."),
+
+      (() => {
+        const border = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
+        const borders = { top: border, bottom: border, left: border, right: border };
+        const hdrShading = { fill: "1F3864", type: ShadingType.CLEAR };
+        const altShading  = { fill: "EEF2F7", type: ShadingType.CLEAR };
+        const cols = [480, 2300, 1200, 1000, 2380];
+        const hdr  = ["Cat", "Model", "Task", "Score", "Notes"];
+        const rows = [
+          ["(a)", "PPENet CNN", "5-class crop classification (MinhNKB, A2)", "87.3% Acc",
+           "Custom design: 3 conv blocks (32→64→128 ch), AdaptiveAvgPool, FC 512→256→5, 226 K params. No reference architecture."],
+          ["(b)", "UNet", "5-class segmentation (MinhNKB, A2)", "56.2% mIoU",
+           "Pre-existing architecture (Ronneberger et al. 2015); trained from randomly initialised weights — no pretrained weights used."],
+          ["(c)", "DeepLabV3+ ResNet-50 (COCO zero-shot)", "10-class segmentation (keremberke, A3)", "8.2% mIoU*",
+           "COCO pretrained (21-class output head) used as-is with zero fine-tuning. *Background (index 0) coincidentally matches; all 10 PPE classes score 0 — classes do not align with our schema."],
+          ["(d)", "ViT-B/16", "5-class crop classification (MinhNKB, A2)", "93.9% Acc",
+           "ImageNet pretrained; all layers fine-tuned for 20 epochs on MinhNKB crops."],
+          ["(d)", "DeepLabV3+ ResNet-50", "10-class segmentation (keremberke, A3)", "63.5% mIoU",
+           "ImageNet+COCO pretrained; all backbone and decoder layers fine-tuned for 30 epochs on keremberke semantic masks."],
+          ["(d)", "YOLOv8n-seg", "10-class instance segmentation (keremberke, A3)", "87.1% Mask mAP50",
+           "COCO-seg pretrained; all layers fine-tuned for 30 epochs on keremberke instance polygon labels."],
+        ];
+        const makeCell = (text, shading, bold, colIdx) =>
+          new TableCell({
+            borders, shading,
+            width: { size: cols[colIdx], type: WidthType.DXA },
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            children: [new Paragraph({ children: [new TextRun({ text, bold, font: "Arial", size: bold ? 18 : 16 })] })],
+          });
+        return new Table({
+          width: { size: 9360, type: WidthType.DXA },
+          columnWidths: cols,
+          rows: [
+            new TableRow({
+              tableHeader: true,
+              children: hdr.map((h, i) => makeCell(h, hdrShading, true, i)),
+            }),
+            ...rows.map((row, ri) =>
+              new TableRow({
+                children: row.map((cell, ci) =>
+                  makeCell(cell, ri % 2 === 1 ? altShading : { fill: "FFFFFF", type: ShadingType.CLEAR }, false, ci)
+                ),
+              })
+            ),
+          ],
+        });
+      })(),
+
+      P("Key insight: category (c) — the COCO-pretrained model used without fine-tuning — achieves near-zero IoU on every PPE class because the 21 COCO output classes do not overlap with our 10-class keremberke schema. This directly demonstrates that pre-trained weights provide a strong feature backbone but require task-specific fine-tuning to produce useful predictions for a specialised domain."),
+
       // ── Appendix ──────────────────────────────────────────────────────────
       pageBreak(),
       H1("Appendix: Training Curves and Prediction Samples"),
