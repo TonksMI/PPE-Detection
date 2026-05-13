@@ -298,7 +298,27 @@ const doc = new Document({
       bullet("Semantic segmentation — every pixel in a full scene is assigned one of 11 class labels: background plus the 10 keremberke PPE item classes. The entire frame is processed in a single forward pass."),
       bullet("Instance segmentation — each PPE item is detected as a separate object with its own polygon mask. Two helmets on two different workers are tracked as two distinct instances with separate masks."),
 
-      H2("1.1 Class Definitions"),
+      H2("1.1 Finding a suitable dataset"),
+
+      P("The dataset used in Assignments 1 and 2 (MinhNKB) contains only image-level labels: one of five compliance states per whole-person crop (helmet, safety_vest, full_ppe, partial_ppe, no_ppe). There are no bounding boxes, no polygon outlines, and no pixel masks. Pixel-wise segmentation models require spatial annotations — either bounding boxes that can be converted to masks, or polygon masks drawn directly. The A2 dataset could not be used for this task."),
+
+      P("Three options were evaluated for acquiring spatially annotated PPE data:"),
+      bullet("Manually annotating the existing MinhNKB images with polygon masks. This was ruled out: producing reliable per-pixel ground truth for 3,400+ full-scene industrial images would require a dedicated annotation tool and many hours of labelling. The resulting dataset would still be limited to the 5-class MinhNKB schema, which does not distinguish individual PPE items."),
+      bullet("Using the bounding-box output from the A1 YOLOv8n person detector to crop regions of interest and label them. Ruled out because the A1 detector only localises people, not individual PPE items, so box-to-mask conversion would produce person-sized regions rather than item-level masks."),
+      bullet("Finding a publicly available dataset with bounding-box or polygon annotations for individual PPE items. The keremberke/protective-equipment-detection dataset on Roboflow matched this requirement: 11,704 annotated images in COCO format with bounding boxes for 10 item-level PPE classes across construction, manufacturing, and food-processing scenes."),
+
+      P("The keremberke dataset was selected for three specific reasons. First, it provides item-level annotations rather than person-level states — each box covers a single helmet, glove, or goggles instance, making the annotation granularity suitable for pixel-level prediction. Second, it is large enough (11,704 images before capping) to support both semantic and instance segmentation training without severe data scarcity. Third, it is distributed in COCO format with bounding boxes present in every annotation record, which makes it directly compatible with SAM2 box-prompted segmentation for automatic pixel mask generation."),
+
+      P("The COCO JSON files ship with empty segmentation fields — only bounding boxes are provided. SAM2 (Segment Anything Model 2) was used to bridge this gap: each bounding box is passed to SAM2 as a spatial prompt, and SAM2 returns a binary foreground mask tightly fitted to the object inside the box. This converts the bounding-box dataset into a pseudo-segmentation dataset without any manual pixel labelling. Where SAM2 returns no mask (approximately 2-3% of boxes due to ambiguous or heavily occluded regions), the bounding box rectangle is used as a fallback mask. The result is a full pixel-level dataset suitable for training both semantic and instance segmentation models."),
+
+      H2("1.2 Model selection"),
+
+      P("With the keremberke dataset prepared, two architectures were chosen to cover the two distinct segmentation paradigms:"),
+      bullet("DeepLabV3+ ResNet-50 for semantic segmentation. DeepLabV3+ was chosen because its Atrous Spatial Pyramid Pooling (ASPP) module aggregates context at multiple scales simultaneously, which is important for a dataset where objects of interest range from large gloves covering 5% of the image to small face masks covering under 0.5%. The ResNet-50 backbone is pretrained on ImageNet and COCO (category (d)), providing feature detectors for edges, shapes, and textures before any PPE-specific training. The ASPP decoder is replaced with an 11-class head matching our schema. All layers are fine-tuned end to end. DeepLabV3+ assigns one class label to every pixel in the full scene, including explicit background prediction."),
+      bullet("YOLOv8n-seg for instance segmentation. YOLOv8 was already used in the A1 and A2 pipelines for person detection and end-to-end PPE detection. The seg variant extends the detection head with a mask branch that produces polygon outlines per detected instance. This architecture was chosen because it directly connects to the prior project work, handles overlapping instances natively (two helmets on two workers are reported as separate detections), and runs at practical inference speed on an RTX 5070. Like DeepLabV3+, it starts from COCO pretrained weights (category (d)) and is fine-tuned on the keremberke instance dataset."),
+      P("The two models are complementary rather than redundant. DeepLabV3+ labels every pixel and includes background, making it suitable for scene-level coverage analysis. YOLOv8n-seg detects discrete item instances with confidence scores, making it suitable for per-worker compliance counting. Both are evaluated independently on the same 600-image validation split."),
+
+      H2("1.3 Class Definitions"),
 
       P("The keremberke dataset labels individual PPE items and their absence. Each bounding box covers a single item on a single worker. The 10 classes are:"),
       bullet("helmet — a hard hat physically present and worn on the head."),
@@ -316,7 +336,7 @@ const doc = new Document({
 
       P("Class label ambiguity: The no_X classes carry inherent annotation ambiguity. A box labelled no_helmet covers the head region of a worker not wearing a hard hat — but where the head ends is a judgment call that varies across annotators, image resolutions, and partial occlusions. The same applies to no_glove (bare hand boundary), no_goggles (eye region extent), and no_mask (lower face region). Because SAM2 receives these imprecise boxes and produces pixel masks that are then treated as ground truth, any box-level ambiguity propagates directly to the pixel labels. This differs from the Assignment 2 schema where full_ppe and partial_ppe created ambiguity about the threshold of compliance — here the ambiguity is spatial rather than categorical. Models trained on this data absorb both types of noise."),
 
-      H2("1.2 Dataset"),
+      H2("1.4 Dataset"),
 
       P("The keremberke/protective-equipment-detection dataset ships as three zip files with COCO-format annotations. All segmentation fields in the COCO JSON are empty — only bounding boxes are provided. Pixel masks are generated by SAM2 using the boxes as prompts."),
       bullet("train.zip — 6,473 images. Contains glove, no_glove, goggles, no_goggles, shoes, no_shoes. No helmet annotations."),
@@ -334,7 +354,7 @@ const doc = new Document({
 
       P("Gloves and goggles dominate. Mask has the fewest annotations at 269, making it the hardest class to learn. The loss function uses class weights of 0.2 for background and 2.0 for each of the 10 PPE classes to compensate for background pixel dominance."),
 
-      H2("1.3 Mask Generation"),
+      H2("1.5 Mask Generation"),
 
       P("The data preparation script ppe_seg_keremberke_rebuild.py processes each image as follows:"),
       bullet("Reads the COCO JSON directly from the zip archive (no disk extraction needed)."),
