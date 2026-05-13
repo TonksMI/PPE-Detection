@@ -468,6 +468,39 @@ const doc = new Document({
           items.push(imgCaption("Figure 5. YOLOv8n-seg per-class mask mAP50 on the 600-image validation set."));
         }
 
+        // Best / worst prediction grids with Grad-CAM and saliency maps
+        // Each image is ~2620×1653px (ratio 1.58). Fit to content width (620px).
+        const DL_GRID_W = 620, DL_GRID_H = 393;
+        const YO_GRID_W = 620, YO_GRID_H = 390;
+
+        items.push(pageBreak());
+        items.push(H2("Best and Worst Predictions with Grad-CAM and Saliency Maps"));
+        items.push(P("Each grid shows five columns: Input image | Ground-truth mask or boxes | Model prediction | Grad-CAM heatmap | Saliency map. Images are ranked by per-image metric: mean IoU (excluding background) for DeepLabV3+, mean best-match box-IoU against ground-truth boxes for YOLOv8n-seg. The Grad-CAM target layer is backbone.layer4 (final ResNet50 block) for DeepLab and the SPPF layer (layer 9) for YOLO. The saliency map shows the gradient magnitude of the score with respect to the input pixel values."));
+
+        const dl_best = loadImg("deeplab_best3.png", DL_GRID_W, DL_GRID_H);
+        if (dl_best) {
+          items.push(dl_best);
+          items.push(imgCaption("Figure 6. DeepLabV3+ — top-3 validation images by per-image mIoU (excluding background). Score shown on the left of each row."));
+        }
+
+        const dl_worst = loadImg("deeplab_worst3.png", DL_GRID_W, DL_GRID_H);
+        if (dl_worst) {
+          items.push(dl_worst);
+          items.push(imgCaption("Figure 7. DeepLabV3+ — bottom-3 validation images by per-image mIoU. Zero scores indicate images where every PPE class present in the ground truth was completely missed."));
+        }
+
+        const yo_best = loadImg("yolo_best3.png", YO_GRID_W, YO_GRID_H);
+        if (yo_best) {
+          items.push(yo_best);
+          items.push(imgCaption("Figure 8. YOLOv8n-seg — top-3 validation images by mean best-match box-IoU against ground-truth boxes."));
+        }
+
+        const yo_worst = loadImg("yolo_worst3.png", YO_GRID_W, YO_GRID_H);
+        if (yo_worst) {
+          items.push(yo_worst);
+          items.push(imgCaption("Figure 9. YOLOv8n-seg — bottom-3 validation images by mean best-match box-IoU. Zero scores indicate images where the model produced no confident detections above the 0.25 confidence threshold."));
+        }
+
         return items.filter(Boolean);
       })()),
 
