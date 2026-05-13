@@ -1,0 +1,2 @@
+Model,Task,mIoU,Pixel_Acc,Train_Time(s),IoU_background,IoU_helmet,IoU_no_helmet,IoU_glove,IoU_no_glove,IoU_goggles,IoU_no_goggles,IoU_mask,IoU_no_mask,IoU_shoes,IoU_no_shoes
+DeepLabV3+ ResNet50 (zero-shot COCO),semantic_seg_zeroshot,0.0823,0.9019,0,0.9051,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0005
