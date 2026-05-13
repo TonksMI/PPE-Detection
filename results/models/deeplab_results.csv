@@ -1,2 +1,2 @@
-Model,Task,mIoU,Pixel_Acc,Train_Time(s),IoU_background,IoU_full_ppe,IoU_helmet,IoU_no_ppe,IoU_partial_ppe,IoU_safety_vest
-DeepLabV3+ ResNet50,semantic_seg,0.4098,0.8618,4431.7,0.8612,0.3755,0.0972,0.3581,0.4064,0.3601
+Model,Task,mIoU,Pixel_Acc,Train_Time(s),IoU_background,IoU_helmet,IoU_no_helmet,IoU_glove,IoU_no_glove,IoU_goggles,IoU_no_goggles,IoU_mask,IoU_no_mask,IoU_shoes,IoU_no_shoes
+DeepLabV3+ ResNet50,semantic_seg,0.6347,0.9957,39795.7,0.9957,0.7947,0.5550,0.6511,0.4970,0.5540,0.5462,0.6276,0.5165,0.6503,0.5938
