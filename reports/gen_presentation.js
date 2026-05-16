@@ -349,11 +349,11 @@ pres.subject = "AI/ML Final Project";
   });
 
   const reasons = [
-    "Real-time, continuous monitoring — unlike periodic manual audits",
-    "Objective and consistent — eliminates human observer bias and fatigue",
-    "Scalable — one model covers hundreds of cameras and thousands of workers simultaneously",
-    "Actionable — flags violations instantly for supervisors, enabling rapid corrective action",
-    "Granular — distinguishes helmet, gloves, mask, goggles, and shoes at pixel level",
+    "Runs continuously — no shift changes, no fatigue, no missed hours",
+    "Consistent — the same image gets the same result every time, regardless of who is watching",
+    "Scales without extra cost — one model covers hundreds of cameras simultaneously",
+    "Flags violations the moment they appear, not at the next safety audit",
+    "Reads individual PPE items — helmet, gloves, mask, goggles, shoes — separately per worker",
   ];
   reasons.forEach((r, i) => {
     s.addShape(pres.shapes.RECTANGLE, {
@@ -655,7 +655,7 @@ pres.subject = "AI/ML Final Project";
     });
   });
 
-  s.addText("Key Insight: The presence/absence class schema of keremberke is unique — most PPE datasets only label items present, making this dataset especially valuable for real-world compliance detection.", {
+  s.addText("Note: Most PPE datasets only annotate items that are present. keremberke annotates both presence and absence (no_helmet, no_mask, etc.) — which is what a real compliance system actually needs to detect.", {
     x: 0.3, y: 4.55, w: 9.4, h: 0.58,
     fontSize: 9.5, color: "15803D", italic: true, margin: 0,
     fill: { color: "F0FDF4" }, line: { color: "BBF7D0", width: 1 }
@@ -670,9 +670,9 @@ pres.subject = "AI/ML Final Project";
 {
   const s = pres.addSlide();
   s.background = { color: BGWHITE };
-  addRedHeader(s, pres, "Evaluation Framework", "Four required evaluation categories for rigorous model comparison");
+  addRedHeader(s, pres, "Evaluation Framework", "Four required categories — one model from each");
 
-  s.addText("Course requirement: evaluate using models from each of these four categories — ensuring a systematic comparison of architecture design, training strategy, and task transfer.", {
+  s.addText("The course requires one model from each category. That constraint turns out to be useful: it forces a direct comparison of architecture design, training strategy, and task transfer on the same dataset.", {
     x: 0.35, y: 0.88, w: 9.3, h: 0.5,
     fontSize: 11, color: DARK, margin: 0
   });
@@ -1211,7 +1211,7 @@ pres.subject = "AI/ML Final Project";
 {
   const s = pres.addSlide();
   s.background = { color: BGWHITE };
-  addRedHeader(s, pres, "Why Results Are Meaningful", "Interpreting performance in the context of real-world PPE compliance");
+  addRedHeader(s, pres, "What the Numbers Actually Mean", "Three results that tell a coherent story");
 
   // Summary comparison chart (drawn as bar shapes)
   const barData = [
@@ -1273,12 +1273,12 @@ pres.subject = "AI/ML Final Project";
 
   // Key insights
   const insights = [
-    ["Fine-tuning is essential",
-     "Zero-shot (c) achieved 8.2% mIoU. Adding 50 epochs of fine-tuning on our data lifted the same architecture to 63.5% mIoU — a 55-point jump proving task-specific adaptation is non-negotiable."],
-    ["Custom design vs transfer",
-     "Our hand-designed PPENet CNN (87.3%) comes close to ImageNet-pretrained ViT-B/16 (93.9%) despite 380× fewer parameters. Purpose-built lightweight models remain competitive."],
-    ["Instance > semantic for compliance",
-     "YOLOv8n-seg's 87.1% mask mAP50 with per-instance tracking enables per-worker reporting — a requirement for practical safety compliance that pixel-level semantic segmentation alone cannot satisfy."],
+    ["Same model, 55 more points",
+     "Zero-shot DeepLabV3+ (COCO weights, no fine-tuning): 8.2% mIoU. The same architecture after 50 epochs on our data: 63.5%. The model does not change — what changes is whether it has seen the task."],
+    ["380× fewer parameters, 6.6 pp behind",
+     "PPENet CNN (226K params) reaches 87.3%. ViT-B/16 (86M params) reaches 93.9%. The gap is real but the compute difference is not. A small purpose-built model holds its own here."],
+    ["Per-worker vs per-pixel",
+     "YOLOv8n-seg at 87.1% mask mAP50 can say which worker is missing a mask. Semantic segmentation can only say that somewhere in the frame, a mask is absent. For a real site, the first answer is more useful."],
   ];
   insights.forEach(([title, body], i) => {
     s.addShape(pres.shapes.RECTANGLE, {

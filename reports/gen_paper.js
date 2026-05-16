@@ -264,19 +264,17 @@ push(
 push(
   h1("Abstract"),
   body(
-    "We present a two-stage computer vision pipeline for automated Personal Protective Equipment " +
-    "(PPE) compliance detection in industrial environments. The system combines YOLOv8n person " +
-    "detection with a multi-model classification and segmentation suite covering five evaluation " +
-    "strategies: (a) a custom-designed PPENet CNN achieving 87.3% accuracy; (b) a pre-existing " +
-    "UNet trained from scratch yielding " + UNET_MIOU + " mIoU; (c) a COCO-pretrained DeepLabV3+ " +
-    "evaluated zero-shot, which produces only " + DLZ_MIOU + " mIoU due to class vocabulary mismatch; " +
-    "(d) a fine-tuned DeepLabV3+ ResNet-50 reaching " + DL_MIOU + " mIoU and a fine-tuned YOLOv8n-seg " +
-    "achieving " + YOLO_MASK + " mask mAP50 for instance segmentation. A fine-tuned ViT-B/16 achieves " +
-    VIT_ACC + " classification accuracy, demonstrating the effectiveness of transfer learning. " +
-    "Collectively, these results confirm that task-specific fine-tuning is essential — adding 50 " +
-    "training epochs to the zero-shot baseline yields a 55 percentage-point mIoU improvement on the " +
-    "same architecture. The hardest classes remain absence variants (no_mask: " + (dlClassIou["no_mask"] || "51.7%") + ", " +
-    "no_helmet: " + (dlClassIou["no_helmet"] || "55.5%") + ") due to class imbalance and occlusion."
+    "This report evaluates a two-stage computer vision pipeline for PPE compliance monitoring, " +
+    "covering four required model categories: (a) a custom PPENet CNN at 87.3% accuracy; " +
+    "(b) a UNet trained from scratch at " + UNET_MIOU + " mIoU; (c) COCO-pretrained DeepLabV3+ " +
+    "run zero-shot on the keremberke PPE dataset, which scores only " + DLZ_MIOU + " mIoU because " +
+    "its 21 COCO output classes share no overlap with our 10 PPE classes; and (d) fine-tuned " +
+    "versions of DeepLabV3+ (" + DL_MIOU + " mIoU), YOLOv8n-seg (" + YOLO_MASK + " mask mAP50), " +
+    "and ViT-B/16 (" + VIT_ACC + " accuracy). The same DeepLabV3+ architecture goes from " + DLZ_MIOU +
+    " to " + DL_MIOU + " mIoU after 50 fine-tuning epochs — no architectural change, just task-specific " +
+    "supervision. No_mask (" + (dlClassIou["no_mask"] || "51.7%") + ") and no_helmet " +
+    "(" + (dlClassIou["no_helmet"] || "55.5%") + ") are the hardest classes, driven by training " +
+    "imbalance and the inherent ambiguity of detecting absent objects."
   ),
   spacer(),
   new Paragraph({
@@ -303,37 +301,32 @@ push(
     "annually in the United States alone (National Safety Council)."
   ),
   body(
-    "Traditional compliance monitoring relies on periodic manual inspections — an approach that is " +
-    "both infrequent and susceptible to observer bias. Workers may self-report, and the presence of " +
-    "an inspector may alter behaviour temporarily. Large industrial sites with hundreds of cameras " +
-    "make continuous human monitoring operationally infeasible. This creates a compelling case for " +
-    "automated, video-based compliance analytics."
+    "Traditional compliance monitoring relies on periodic manual inspections: infrequent by design " +
+    "and prone to observer bias. Workers may adjust behaviour during spot checks; large sites with " +
+    "dozens of active cameras make continuous human review impractical."
   ),
   body(
-    "Computer vision offers real-time, objective, and scalable monitoring. A single trained model " +
-    "can process hundreds of concurrent camera feeds, flag violations immediately, and generate " +
-    "per-worker compliance records without human intervention. However, achieving reliable detection " +
-    "at the granularity required — distinguishing the presence and absence of individual PPE items " +
-    "such as helmets, gloves, goggles, masks, and shoes — demands specialised architectures trained " +
-    "on domain-specific data."
+    "Video-based automation changes this. A single trained model watches hundreds of feeds " +
+    "simultaneously, logs violations as they happen, and generates per-worker records without a " +
+    "human in the loop. Getting there, though, requires models that can distinguish not just " +
+    "whether a helmet is present but whether it is missing — a harder problem that most published " +
+    "PPE datasets sidestep entirely."
   ),
   h2("1.1 Project Scope and Contribution"),
   body(
-    "This project delivers a comprehensive multi-model evaluation of PPE detection and segmentation " +
-    "across four evaluation categories mandated by the course: (a) a custom-designed architecture, " +
-    "(b) a pre-existing architecture trained from scratch, (c) a pre-existing architecture using " +
-    "pretrained weights without fine-tuning, and (d) a pre-existing architecture with pretrained " +
-    "weights that are fine-tuned on task-specific data. This framework provides a rigorous " +
-    "comparison of design choices, training strategies, and the critical role of fine-tuning."
+    "We evaluate PPE detection and segmentation across four model categories required by the course: " +
+    "(a) a custom-designed architecture built from scratch, (b) an established architecture trained " +
+    "from random init, (c) a pretrained model run zero-shot with no fine-tuning, and (d) pretrained " +
+    "models fine-tuned on task-specific data. Running all four in parallel makes the contribution " +
+    "of fine-tuning legible in a way that any single model cannot."
   ),
   body(
-    "We make the following contributions: (1) a custom PPENet CNN architecture with 226K parameters " +
-    "achieving 87.3% crop classification accuracy; (2) a zero-shot experiment empirically " +
-    "demonstrating the class vocabulary mismatch problem between COCO-pretrained models and " +
-    "domain-specific schemas; (3) a fine-tuned DeepLabV3+ ResNet-50 achieving " + DL_MIOU + " semantic " +
-    "segmentation mIoU; (4) a fine-tuned YOLOv8n-seg achieving " + YOLO_MASK + " instance segmentation " +
-    "mask mAP50; and (5) an analysis of absence class difficulty — a challenge unique to our " +
-    "dataset schema that has direct operational significance."
+    "Concretely: PPENet CNN (226K params, 87.3% accuracy) is the custom baseline. The zero-shot " +
+    "experiment exposes the class vocabulary problem that makes COCO-pretrained models useless " +
+    "off-the-shelf on PPE data. Fine-tuned DeepLabV3+ reaches " + DL_MIOU + " mIoU; " +
+    "YOLOv8n-seg reaches " + YOLO_MASK + " mask mAP50 for instance segmentation. " +
+    "No_mask and no_helmet sit near 50% IoU in both models — the absence-class problem is real, " +
+    "consistent across architectures, and still unsolved."
   ),
   spacer(),
 );
@@ -566,29 +559,24 @@ push(
     "was modified for our 5-class MinhNKB segmentation schema."
   ),
   body(
-    "Crucially, all weights were initialised randomly — no pretrained backbone was used. The " +
-    "model was trained from scratch on the MinhNKB training set for 50 epochs using Adam " +
-    "optimiser and cross-entropy loss. This isolates the effect of the UNet architecture from " +
-    "any pretrained feature representations."
+    "All weights were initialised randomly — no pretrained backbone. Trained for 50 epochs on " +
+    "MinhNKB using Adam and cross-entropy loss. The point is to separate architecture from " +
+    "initialisation: whatever UNet achieves here comes from its structure, not from ImageNet."
   ),
 
   h2("5.4 Category (c): DeepLabV3+ Zero-Shot — Pretrained Weights, No Fine-tuning"),
   body(
-    "To establish an empirical baseline for transfer learning, we evaluate DeepLabV3+ " +
-    "ResNet-50 with COCO VOC-label pretrained weights (DeepLabV3_ResNet50_Weights." +
-    "COCO_WITH_VOC_LABELS_V1 from torchvision) directly on the keremberke validation set, " +
-    "without any fine-tuning. The COCO output head produces predictions for 21 classes: " +
+    "We load DeepLabV3+ ResNet-50 with COCO VOC-label weights " +
+    "(DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1) and run it directly on the " +
+    "keremberke validation set, no fine-tuning. The COCO head predicts 21 classes: " +
     "background, aeroplane, bicycle, bird, boat, bottle, bus, car, cat, chair, cow, " +
-    "diningtable, dog, horse, motorbike, person, pottedplant, sheep, sofa, train, and " +
-    "tvmonitor. None of these map to our 10 PPE classes."
+    "diningtable, dog, horse, motorbike, person, pottedplant, sheep, sofa, train, tvmonitor. " +
+    "None of these are PPE classes."
   ),
   body(
-    "Predictions are clipped to the range [0, 10] to allow IoU calculation against our 11-class " +
-    "schema. Class index 0 (background) coincidentally overlaps between COCO and our schema, " +
-    "providing a non-trivial background IoU. All ten PPE-specific classes receive IoU ≈ 0, " +
-    "since the model has never been trained to predict them. This experiment directly " +
-    "demonstrates that pretrained weights confer representational capacity but cannot substitute " +
-    "for task-specific supervision."
+    "Predictions are clipped to [0, 10] for IoU computation. Background (index 0) coincidentally " +
+    "overlaps with our schema. All ten PPE-specific classes score IoU ≈ 0 — the model has " +
+    "simply never been trained to predict them. A model cannot predict classes it does not know exist."
   ),
 
   h2("5.5 Category (d): Fine-tuned Models"),
@@ -635,12 +623,10 @@ push(
   h1("6. Results"),
   h2("6.1 Classification Results (Assignment 2)"),
   body(
-    "Table 2 summarises classification performance across all four categories. The custom " +
-    "PPENet CNN (category a) achieves 87.3% accuracy, outperforming the SVM baseline (category b) " +
-    "by 11 percentage points while using a purpose-built architecture with only 226K parameters. " +
-    "The fine-tuned ViT-B/16 (category d) achieves the highest accuracy at " + VIT_ACC + ", " +
-    "demonstrating the power of large-scale ImageNet pretraining combined with task-specific " +
-    "fine-tuning."
+    "Table 2 shows classification performance. PPENet CNN (category a) beats the SVM baseline " +
+    "(category b) by 11 points using a hand-designed 226K-parameter architecture. ViT-B/16 " +
+    "(category d) tops out at " + VIT_ACC + " after 10 fine-tuning epochs, trading " +
+    "380× more parameters for a 6.6-point accuracy gain over the custom CNN."
   ),
 );
 
@@ -736,65 +722,51 @@ push(
 // ══════════════════════════════════════════════════════════════════════════════
 push(
   h1("7. Discussion"),
-  h2("7.1 The Essential Role of Fine-tuning"),
+  h2("7.1 What fine-tuning actually does"),
   body(
-    "The most striking finding of this study is the contrast between the zero-shot baseline " +
-    "(category c) and the fine-tuned model (category d). The COCO-pretrained DeepLabV3+ " +
-    "achieves only " + DLZ_MIOU + " mIoU on the keremberke validation set without fine-tuning — " +
-    "despite using the same architecture and 42 million pretrained parameters as the fine-tuned " +
-    "version. This collapse is attributable entirely to class vocabulary mismatch: the 21 COCO " +
-    "output classes (aeroplane, bicycle, bird, etc.) bear no relationship to our 10 PPE classes. " +
-    "The model cannot predict classes it has never been trained to predict."
+    "Same architecture. Same 42 million pretrained parameters. The only difference is 50 epochs " +
+    "on keremberke data — and mIoU goes from " + DLZ_MIOU + " to " + DL_MIOU + ". That gap is not " +
+    "a surprise if you look at what the COCO head predicts: aeroplane, bicycle, bird, boat, " +
+    "bottle, bus, car, cat, chair, cow. None of those are PPE. The model scores near zero on all " +
+    "ten PPE classes because it has no output node for any of them. ResNet-50's features are " +
+    "genuinely useful — they transfer. The output head does not."
+  ),
+  h2("7.2 226K parameters vs 86M"),
+  body(
+    "PPENet CNN (category a, 226K params) lands at " + CNN_ACC + " accuracy. ViT-B/16 " +
+    "(category d, 86M params) lands at " + VIT_ACC + ". That is a 6.6-point gap for a 380× " +
+    "parameter increase. Whether that trade-off is worth it depends heavily on the deployment " +
+    "context: a server with a batch queue probably picks ViT; a Jetson Nano on a camera pole " +
+    "probably picks PPENet."
   ),
   body(
-    "Adding 50 epochs of fine-tuning on the keremberke training set lifts mIoU from " + DLZ_MIOU +
-    " to " + DL_MIOU + " — a gain of " +
-    (parseFloat(DL_MIOU) - parseFloat(DLZ_MIOU)).toFixed(1) +
-    " percentage points from an identical initialisation point. This demonstrates that pretrained " +
-    "weights provide a strong representational prior (ResNet-50 features are excellent low-level " +
-    "detectors for textures, edges, and shapes), but task-specific supervision is non-negotiable " +
-    "for domain transfer."
+    "UNet (category b, " + UNET_MIOU + " mIoU) is the honest from-scratch segmentation baseline. " +
+    "Fine-tuned DeepLabV3+ (category d) beats it by 7.3 points. That gap combines two things — " +
+    "ASPP multi-scale context and ImageNet pretraining — and there is no clean way to separate " +
+    "them without an additional ablation."
   ),
-  h2("7.2 Custom Design vs Transfer Learning"),
+  h2("7.3 Absence classes"),
   body(
-    "Our hand-designed PPENet CNN (category a, " + CNN_ACC + " accuracy, 226K parameters) " +
-    "achieves surprisingly competitive performance relative to the fine-tuned ViT-B/16 " +
-    "(category d, " + VIT_ACC + " accuracy, 86M parameters). This represents a 380× reduction " +
-    "in parameter count for a 6.6 percentage point accuracy reduction. For edge-device deployment " +
-    "— such as a Jetson Nano or Raspberry Pi attached to a construction site camera — PPENet CNN " +
-    "is clearly preferable."
+    "No_mask (" + (dlClassIou["no_mask"] || "51.7%") + " IoU), no_helmet " +
+    "(" + (dlClassIou["no_helmet"] || "55.5%") + "), no_shoes (" + (dlClassIou["no_shoes"] || "66.3%") + ") " +
+    "are the hardest classes across every model we ran. Three things drive this:"
   ),
-  body(
-    "The category (b) UNet (" + UNET_MIOU + " mIoU) provides a useful baseline for segmentation: " +
-    "it demonstrates that the established UNet architecture, even when trained from scratch with " +
-    "no pretrained backbone, achieves substantial segmentation performance. Comparing UNet (b) " +
-    "against fine-tuned DeepLabV3+ (d, " + DL_MIOU + " mIoU) quantifies the combined benefit of " +
-    "a stronger architecture (ASPP, residual backbone) and ImageNet pretraining: +7.3 percentage " +
-    "points."
-  ),
-  h2("7.3 Absence Classes as the Hard Problem"),
-  body(
-    "Across all models, absence classes — no_mask (" + (dlClassIou["no_mask"] || "51.7%") + "), " +
-    "no_helmet (" + (dlClassIou["no_helmet"] || "55.5%") + "), no_shoes (" + (dlClassIou["no_shoes"] || "66.3%") + ") — are " +
-    "consistently the hardest to predict. Several factors contribute:"
-  ),
-  bullet("Class imbalance: absence classes appear 3–5× less frequently than presence classes in the training data."),
-  bullet("Visual ambiguity: the 'no_mask' region is defined by the absence of an object — the model must learn that a face region without a mask is a violation, relying on subtle contextual cues."),
-  bullet("Occlusion: workers without PPE tend to be at the periphery of the frame or partially occluded, making the target region smaller and noisier."),
+  bullet("Frequency: absence classes appear 3–5× less often than their presence counterparts."),
+  bullet("Ambiguity: detecting no_mask means recognising a face region that lacks an expected object. The signal is contextual, not visual."),
+  bullet("Occlusion: workers missing PPE tend to be at frame edges or behind other workers, so the target region is smaller and noisier."),
   spacer(),
   body(
-    "These challenges have direct operational significance: absence classes are precisely the " +
-    "violations a compliance monitoring system must detect. Improving no_mask and no_helmet IoU " +
-    "from ~50% toward 80%+ should be a primary target for future work."
+    "This is not a modelling failure — it is a data and task problem. No_mask and no_helmet near " +
+    "50% IoU is also the number that matters most operationally. Pushing those to 80%+ is the " +
+    "clearest path to a system that is actually useful on a site."
   ),
-  h2("7.4 Semantic vs Instance Segmentation for Compliance"),
+  h2("7.4 Semantic vs instance segmentation"),
   body(
-    "Semantic segmentation (DeepLabV3+, " + DL_MIOU + " mIoU) labels every pixel in the scene " +
-    "but does not distinguish between individual workers. Instance segmentation (YOLOv8n-seg, " +
-    YOLO_MASK + " mask mAP50) associates each mask with a specific detection, enabling " +
-    "per-worker compliance reporting. For real-world deployment, instance segmentation is " +
-    "operationally superior: a site supervisor needs to know which worker (worker 3 in frame " +
-    "camera-7) is missing a helmet, not just that some helmet-absent pixels exist in the frame."
+    "DeepLabV3+ (" + DL_MIOU + " mIoU) labels every pixel but cannot tell you which worker is " +
+    "missing a helmet. YOLOv8n-seg (" + YOLO_MASK + " mask mAP50) gives you a mask per person — " +
+    "worker 3 in camera 7 is unprotected, not just 'some pixels in frame 7 are no_helmet'. " +
+    "For a real site, that specificity matters. Semantic segmentation is useful for measuring " +
+    "aggregate compliance; instance segmentation is what you need to actually intervene."
   ),
   spacer(),
 );
@@ -804,13 +776,13 @@ push(
 // ══════════════════════════════════════════════════════════════════════════════
 push(
   h1("8. Future Work"),
-  body("Based on the current results, we identify six high-priority directions for future work:"),
-  bullet("Extended YOLOv8n person detection: the current person detector (mAP50 = 0.679 after 4 fine-tuning epochs) limits end-to-end pipeline accuracy. Target mAP50 > 0.85 with 50–100 epochs and mosaic/mixup/copy-paste augmentation."),
-  bullet("EfficientNet / MobileNetV3 backbone: replacing ResNet-50 in DeepLabV3+ with EfficientNet-B4 offers a better accuracy/parameter ratio. MobileNetV3 enables deployment on Jetson Nano (<5W)."),
-  bullet("Focal loss and class weighting: absence classes (no_mask 51.7%, no_helmet 55.5%) would benefit from focal loss (γ = 2) with class-frequency-inverse weights to push tail-class IoU by 5–10 pp."),
-  bullet("Transformer segmenters: Mask2Former and SegFormer achieve 5–10% mIoU improvement over DeepLabV3+ on general benchmarks. Evaluation on keremberke would quantify the benefit for PPE-specific segmentation."),
-  bullet("End-to-end single-stage YOLO PPE detection: training YOLOv8-seg directly on full scene images (not crops) eliminates the two-stage pipeline latency and allows joint optimisation of person detection and PPE classification."),
-  bullet("Real-time ONNX / TensorRT deployment: conversion to ONNX and TensorRT on the RTX 5070 should achieve <30 ms/frame at 1080p, enabling live compliance alerting on construction-site CCTV feeds."),
+  body("Six areas would meaningfully improve on what is reported here."),
+  bullet("More YOLOv8n fine-tuning. The person detector reached mAP50 = 0.679 after four epochs. Fifty to one hundred epochs with mosaic and copy-paste augmentation should push that past 0.85, and the two-stage pipeline accuracy follows directly from it."),
+  bullet("Swap the DeepLabV3+ backbone. EfficientNet-B4 gives a better accuracy-to-parameter ratio than ResNet-50. MobileNetV3 drops the compute budget low enough to run on a Jetson Nano under 5W — relevant for edge deployment."),
+  bullet("Fix the absence-class problem with focal loss. No_mask sits at 51.7% IoU, no_helmet at 55.5%. Focal loss (γ = 2) with class-frequency-inverse weights is the standard fix; it should gain 5–10 pp on the tail classes without hurting the rest."),
+  bullet("Try transformer-based segmenters. Mask2Former and SegFormer gain 5–10% mIoU over DeepLabV3+ on general benchmarks. Whether that holds for PPE-specific classes is an open question worth a run."),
+  bullet("Collapse the two-stage pipeline. Training YOLOv8-seg end-to-end on full scene images removes the person-crop step, cuts latency, and lets the model optimize detection and segmentation jointly."),
+  bullet("TensorRT deployment. Converting to ONNX and then TensorRT on the RTX 5070 should hit under 30 ms per frame at 1080p — fast enough for live alerting on a real CCTV feed."),
   spacer(),
 );
 
@@ -820,22 +792,17 @@ push(
 push(
   h1("9. Conclusion"),
   body(
-    "We have presented a systematic multi-model study of PPE detection and segmentation across " +
-    "four required evaluation categories. Key findings are: (1) custom-designed lightweight " +
-    "architectures remain competitive with large pretrained models for specialised tasks — PPENet " +
-    "CNN (226K params) achieves 87.3% accuracy, within 6.6 pp of ViT-B/16 (86M params); (2) " +
-    "pretrained weights without fine-tuning are insufficient for domain transfer — the zero-shot " +
-    "COCO baseline achieves only " + DLZ_MIOU + " mIoU versus " + DL_MIOU + " after fine-tuning; " +
-    "(3) instance segmentation (YOLOv8n-seg, " + YOLO_MASK + " mask mAP50) is operationally " +
-    "preferable to semantic segmentation for compliance monitoring because it enables per-worker " +
-    "attribution; and (4) absence classes remain the most challenging detection targets, with " +
-    "no_mask and no_helmet IoU near 50%, and represent the most important area for future " +
-    "improvement."
+    "Four models, four different design philosophies, one dataset. PPENet CNN (226K params) " +
+    "reaches 87.3% classification accuracy — 6.6 pp behind ViT-B/16 (86M params), using 380 " +
+    "times fewer parameters. The zero-shot COCO baseline lands at " + DLZ_MIOU + " mIoU; the " +
+    "same DeepLabV3+ architecture, fine-tuned for 50 epochs, reaches " + DL_MIOU + ". YOLOv8n-seg " +
+    "hits " + YOLO_MASK + " mask mAP50 and uniquely attributes violations to individual workers. " +
+    "Absence classes — no_mask, no_helmet — stay near 50% IoU across every model tested."
   ),
   body(
-    "Together, these results provide both a practical baseline for production PPE compliance " +
-    "systems and a methodologically rigorous comparison of design choices that can inform future " +
-    "work in domain-specific computer vision."
+    "The consistent pattern is that domain-specific supervision matters more than model size, " +
+    "and that absence classes are a data and task problem more than a modelling one. Those two " +
+    "observations point directly to what to fix next."
   ),
   spacer(),
 );
